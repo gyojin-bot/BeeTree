@@ -9,7 +9,7 @@ struct LinkedList {
     NODE * head;
 };
 
-void insertion_item() {
+void insertion_item(LinkedList * h, int item) {
 
 }
 
