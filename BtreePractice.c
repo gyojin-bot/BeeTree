@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 
-
+#define DEBUG 1
 #define M 3
 #define T 2
-
 typedef struct BtreeNode  {
     int KeyCount; // key의 갯수
     bool leaf; // leaf인지 판정
@@ -23,37 +23,23 @@ typedef struct Btree {
 
 
 BTREENODE* Allocate();
-void TreeCreate(BTREE*);
+void Tree_Create(BTREE*);
 void Insert_nonfull(BTREENODE*, int);
 void Insert(BTREE*, int);
+void Insert_Of_N(BTREE*, int);
 void Delete(BTREENODE*, int);
 bool Search(BTREENODE*, int);
 void Split_Child(BTREENODE*, int);
-int Get_Ran_Int();
+int Get_Rand_Int();
+void Traverse(BTREENODE*, int);
 
 int main() {
+    srand((unsigned int)time(NULL)); 
     BTREE tree;
-    TreeCreate(&tree);
-    Insert(&tree, 10);
-    Insert(&tree, 20);
-    Insert(&tree, 30);
-    Insert(&tree, 40);
-    Insert(&tree, 25);
-    Insert(&tree, 15);
-    Insert(&tree, 50);
-    // Split_Child(tree.root, 0);
-    // for ( int i = 0; i < tree.root->KeyCount; ++i) {
-    //     printf("keys: %d\n", tree.root->keys[i]);
-    //     printf("keysaddress: %d\n", &(tree.root->keys[i]));
-    // }
-    // printf("root keycount: %d\n", tree.root->KeyCount);
-    // printf("root key 0: %d\n", tree.root->keys[0]);
-    // printf("root key 1: %d\n", tree.root->keys[1]);
-    // printf("root key 2: %d\n", tree.root->keys[2]);
-    // printf("child key 0-0: %d\n", tree.root->childs[0]->keys[0]);
-    // printf("child key 1-0: %d\n", tree.root->childs[1]->keys[0]);
-    // printf("child key 0-1: %d\n", tree.root->childs[0]->keys[1]);
-    // printf("child key 1-1: %d\n", tree.root->childs[1]->keys[1]);
+    Tree_Create(&tree);
+    Insert_Of_N(&tree, 10);
+    if(DEBUG) Traverse(tree.root, 0);
+
     if (Search(tree.root, 15)){
         printf("\nYES");
     } else {
@@ -76,7 +62,7 @@ BTREENODE* Allocate() {
 
 
 // 트리를 만든다.
-void TreeCreate(BTREE* tree) { // BTREE는 root* 의 주소를 가진 구조체이다.
+void Tree_Create(BTREE* tree) { // BTREE는 root* 의 주소를 가진 구조체이다.
     BTREENODE* new_node = Allocate(); // 새 노드를 만들기 위해 포인터에 주소를 할당한다.
     new_node->KeyCount = 0; // 새로만들면 key가 안들어있으므로 keycount를 0으로 한다.
     new_node->leaf = true; // 마찬가지로 leaf속성을 on한다.
@@ -161,9 +147,7 @@ void Split_Child(BTREENODE* parentNode, int ChildIndex) {
 // key값을 tree에 삽입한다.
 void Insert(BTREE* tree, int keyValue){
     BTREENODE* rootNode = tree->root;
-    printf("rootNode keycount : %d\n", rootNode->KeyCount);
     if (rootNode->KeyCount == 2*T - 1){
-        printf("0");
         BTREENODE* newRootNode = Allocate();
         tree->root = newRootNode;
         newRootNode->leaf = false;
@@ -176,6 +160,15 @@ void Insert(BTREE* tree, int keyValue){
         Insert_nonfull(rootNode, keyValue);
     }
 
+}
+
+void Insert_Of_N(BTREE* tree, int n) {
+    printf("Inserted randNum :: ");
+    for(int index = 0; index < n; ++index) {
+        int item = Get_Rand_Int() % 101;
+        Insert(tree, item);
+        if(DEBUG) printf("%d ", item);
+    }
 }
 
 
@@ -193,4 +186,28 @@ bool Search(BTREENODE* node, int keyValue){
     else {
         return Search(node->childs[index], keyValue);
     }
+}
+
+int Get_Rand_Int() {
+    
+    return rand();
+}
+
+void Traverse(BTREENODE * p, int level)
+{
+    printf("\n");
+    int i;
+    for(i = 0; i < p->KeyCount; i++)
+    {
+        if(p->leaf == false)
+        {
+            Traverse(p->childs[i], level + 1);
+        }
+        printf(" %d", p->keys[i]);
+    }
+    if(p->leaf == false)
+    {
+        Traverse(p->childs[i], level + 1);
+    }
+    printf("\n");
 }
