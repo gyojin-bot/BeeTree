@@ -25,23 +25,41 @@ typedef struct Btree {
 BTREENODE* Allocate();
 void TreeCreate(BTREE*);
 void Insert_nonfull(BTREENODE*, int);
-// Insert()
-// Delete()
+void Insert(BTREE*, int);
+void Delete(BTREENODE*, int);
+bool Search(BTREENODE*, int);
 void Split_Child(BTREENODE*, int);
+int Get_Ran_Int();
 
 int main() {
     BTREE tree;
     TreeCreate(&tree);
-    Insert_nonfull(tree.root, 10);
-    Insert_nonfull(tree.root, 20);
-    Insert_nonfull(tree.root, 30);
-    Split_Child(tree.root, 1);
-    for ( int i = 0; i < tree.root->KeyCount; ++i) {
-        printf("keys: %d\n", tree.root->keys[i]);
-        printf("keysaddress: %d\n", &(tree.root->keys[i]));
+    Insert(&tree, 10);
+    Insert(&tree, 20);
+    Insert(&tree, 30);
+    Insert(&tree, 40);
+    Insert(&tree, 25);
+    Insert(&tree, 15);
+    Insert(&tree, 50);
+    // Split_Child(tree.root, 0);
+    // for ( int i = 0; i < tree.root->KeyCount; ++i) {
+    //     printf("keys: %d\n", tree.root->keys[i]);
+    //     printf("keysaddress: %d\n", &(tree.root->keys[i]));
+    // }
+    // printf("root keycount: %d\n", tree.root->KeyCount);
+    // printf("root key 0: %d\n", tree.root->keys[0]);
+    // printf("root key 1: %d\n", tree.root->keys[1]);
+    // printf("root key 2: %d\n", tree.root->keys[2]);
+    // printf("child key 0-0: %d\n", tree.root->childs[0]->keys[0]);
+    // printf("child key 1-0: %d\n", tree.root->childs[1]->keys[0]);
+    // printf("child key 0-1: %d\n", tree.root->childs[0]->keys[1]);
+    // printf("child key 1-1: %d\n", tree.root->childs[1]->keys[1]);
+    if (Search(tree.root, 15)){
+        printf("\nYES");
+    } else {
+        printf("\nNONE");
     }
-    printf("child: %d\n", tree.root->childs);
-    printf("child: %d\n", tree.root->childs[1]);
+    
     return 0;
 }
 
@@ -81,7 +99,7 @@ void Insert_nonfull(BTREENODE* node, int KeyValue) {
         while ( KeyIndex >= 1 && KeyValue < node->keys[KeyIndex-1]) {
             // 새로운 key값을 넣을 자리를 마련해준다. (한칸씩 오른쪽으로 이동한다.)
             node->keys[KeyIndex] = node->keys[KeyIndex-1];
-            KeyIndex -= 1;
+            KeyIndex--;
         }
 
         // key값을 넣을 자리를 찾았고, 위에서 해당 자리도 비워놨기 때문에
@@ -90,16 +108,30 @@ void Insert_nonfull(BTREENODE* node, int KeyValue) {
         // 그리고 노드의 keycount를 1 늘려준다.
         node->KeyCount += 1;
     }
+    else {
+        while (KeyIndex >= 1 && KeyValue < node->keys[KeyIndex-1]) {
+            KeyIndex--;
+        }
+        //! KeyIndex++;
+        if (node->childs[KeyIndex]->KeyCount == 2*T - 1){
+            Split_Child(node, KeyIndex);
+            if (KeyValue > node->keys[KeyIndex]){
+                KeyIndex++;
+            }
+        }
+        Insert_nonfull(node->childs[KeyIndex], KeyValue);
+    }
+    
 }
 
 
 // node의 key 갯수가 2T-1인 경우, node를 분리한다. 
-void Split_Child(BTREENODE* node, int ChildIndex) {
+void Split_Child(BTREENODE* parentNode, int ChildIndex) {
     // right_node는 분리하면서 만들어질 새로운 node이기 때문에 메모리를 새로 할당한다.
     BTREENODE* right_node = Allocate();
 
     // 
-    BTREENODE* left_node = node->childs[ChildIndex];
+    BTREENODE* left_node = parentNode->childs[ChildIndex];
 
     // right_node의 leaf 속성은 left_node의 leaf를 받아온다.
     right_node->leaf = left_node->leaf;
@@ -116,12 +148,49 @@ void Split_Child(BTREENODE* node, int ChildIndex) {
     for ( int i = 0; i < T ; ++i ) {
         right_node->childs[i] = left_node->childs[T+i];
     }
-    for ( int i = node->KeyCount; i > ChildIndex ; --i ) {
-        node->childs[i+1] = node->childs[i];
-        node->keys[i] = node->keys[i-1];
+    for ( int i = parentNode->KeyCount; i > ChildIndex ; --i ) {
+        parentNode->childs[i+1] = parentNode->childs[i];
+        parentNode->keys[i] = parentNode->keys[i-1];
     }
-    node->childs[ChildIndex+1] = right_node;
-    node->keys[ChildIndex] = left_node->keys[T-1];
-    node->KeyCount++;
+    parentNode->childs[ChildIndex+1] = right_node;
+    parentNode->keys[ChildIndex] = left_node->keys[T-1];
+    parentNode->KeyCount++;
 }
 
+
+// key값을 tree에 삽입한다.
+void Insert(BTREE* tree, int keyValue){
+    BTREENODE* rootNode = tree->root;
+    printf("rootNode keycount : %d\n", rootNode->KeyCount);
+    if (rootNode->KeyCount == 2*T - 1){
+        printf("0");
+        BTREENODE* newRootNode = Allocate();
+        tree->root = newRootNode;
+        newRootNode->leaf = false;
+        newRootNode->KeyCount = 0;
+        newRootNode->childs[0] = rootNode;
+        Split_Child(newRootNode, 0);
+        Insert_nonfull(newRootNode, keyValue);
+    }
+    else {
+        Insert_nonfull(rootNode, keyValue);
+    }
+
+}
+
+
+bool Search(BTREENODE* node, int keyValue){
+    int index = 0;
+    while ( index < node->KeyCount && keyValue > node->keys[index]){
+        index++;
+    }
+    if ( index <= node->KeyCount && keyValue == node->keys[index] ){
+        return true;
+    }
+    else if ( node->leaf ){
+        return false;
+    }
+    else {
+        return Search(node->childs[index], keyValue);
+    }
+}
