@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
-
+/*
+    1) search == True >> swap 하고 delete
+    2) search == False >> 반복[has_Keyvalue(sub 트리를 결정해야 한다.) > search] 하고 swap 대상 leaf에서 찾고 그 키와 swap한다.
+*/
 #define DEBUG 1
 #define M 3
 #define T 2
@@ -246,18 +249,20 @@ void Traverse(BTREENODE *p, int level)
     printf("\n");
 }
 
+int Find_Value(BTREENODE* node, int keyValue){
+    for(int idx = 0; idx< node->KeyCount; ++idx) {
+        if(node->keys[idx] == keyValue) {
+            return idx;
+        }
+    }
+    return -1;
+}
+
 void Delete(BTREENODE *node, int keyValue)
 {
-
-    // keyValue가 들어갈 수 있는 child의 위치를 저장한다.
-    int childIndex = Has_keyValue(node, keyValue);
-
-    // root를 삭제하는데 childIndex가 0부터 시작하지 않고 1로 반환된다.
-    if (node->keys[childIndex] == keyValue)
-    {
-        // leaf 노드인지 판단
-        if (node->leaf)
-        {
+    int childIndex = Find_Value(node, keyValue);
+    if(childIndex != -1) {
+        if(node->leaf) {
             // 삭제 후 종료
             // key를 찾았으니, 그 이후 키들을 앞으로 한칸씩 민다.
             for (int i = childIndex; i < node->KeyCount - 1; ++i)
@@ -268,39 +273,30 @@ void Delete(BTREENODE *node, int keyValue)
             printf("DELEITION is COMPLETE..!;");
             return;
         }
-        else
-        {
-            // if (chlid-1, child+1 둘다 t-1이면 merge를 할거다)
-            if (childIndex >= 1)
-            {
-                if (node->childs[childIndex - 1]->KeyCount < T && node->childs[childIndex + 1]->KeyCount < T)
-                {
-                    Merge_Nodes(node, keyValue, childIndex);
-                }
-                // child-1, child+1 중 t개 이상이면 swap을 할거다
-                else
-                {
-                    Swap_Keys(node, childIndex);
-                }
+        else { // key가 노드에 존재하나 그 노드가 내부노드인 상태, (정렬이 되어있지 않을 가능성 있음)
+            // 좌측이랑 무언가 할 수 있다는 의미야.
+            if(childIndex >= 1 && node->childs[childIndex - 1]->KeyCount < T) {
+                Merge_Nodes(node, keyValue, childIndex);
+                Delete(node->childs[childIndex], keyValue);
+            }   
+            // 우측이랑 무언가를 할 수 있다.
+            else if(node->childs[childIndex+1]->KeyCount < T){
+                Merge_Nodes(node, keyValue, childIndex+1);
                 Delete(node->childs[childIndex], keyValue);
             }
             else {
-                if (node->childs[childIndex + 1]->KeyCount < T)
-                {
-                    Merge_Nodes(node, keyValue, childIndex);
+                //! 스왑을 하기 이전에 서브트리를 탐색하여 leaf의 키와 
+                if(!Swap_Keys(node, childIndex)) {
+                    Delete(node->childs[childIndex], keyValue);
                 }
-                // child-1, child+1 중 t개 이상이면 swap을 할거다
-                else
-                {
-                    Swap_Keys(node, childIndex);
+                else {
+                    Delete(node->childs[childIndex+1], keyValue);
                 }
-                //! childIndex + 1 이 아닐까?
-                Delete(node->childs[childIndex], keyValue);
             }
         }
     }
-    else
-    {
+    else { // 정렬이 되어 있는 상태. key가 해당 노드에 없을 때,
+        childIndex = Has_keyValue(node, keyValue);
         if (node->childs[childIndex]->KeyCount < T)
         {
             if (node->childs[childIndex - 1]->KeyCount < T && node->childs[childIndex + 1]->KeyCount < T)
@@ -372,8 +368,6 @@ void Delete(BTREENODE *node, int keyValue)
             Delete(node->childs[childIndex], keyValue);
         }
     }
-
-    // 아니면 swap을 할 것이다.
 }
 
 int Has_keyValue(BTREENODE *node, int keyValue)
@@ -439,6 +433,7 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         }
 
         // 부모 노드의 후행 자식 노드의 child들을 선행 자식 노드로 이동
+        // childs leaf 가 아닐 때만 수행,
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex - 1]->childs[i + T] = node->childs[childIndex]->childs[i];
@@ -448,6 +443,7 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         node->childs[childIndex - 1]->KeyCount = 2 * T - 1;
 
         // 부모 노드의 key 갱신 및 child 갱신
+        //! 부모 노드의 key count 갱신
         for (int i = -1; i < node->KeyCount; ++i)
         {
             node->keys[childIndex + i] = node->keys[childIndex + i + 1];
@@ -456,6 +452,7 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         {
             node->childs[childIndex + i] = node->childs[childIndex + i + 1];
         }
+        node->KeyCount --;
     }
 
     // 선행 자식 노드가 없는 경우
@@ -480,6 +477,8 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         node->childs[childIndex]->KeyCount = 2 * T - 1;
 
         // 부모 노드의 key 갱신 및 child 갱신
+        //! 부모노드의 key count 갱신해야함.
+        //! 노드의 key count --;
         for (int i = 0; i < node->KeyCount - 1; ++i)
         {
             node->keys[childIndex + i] = node->keys[childIndex + i + 1];
@@ -488,5 +487,6 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         {
             node->childs[childIndex + i] = node->childs[childIndex + i + 1];
         }
+        node->KeyCount--;
     }
 }
