@@ -30,7 +30,7 @@ void Tree_Create(BTREE *);
 void Insert_nonfull(BTREENODE *, int);
 void Insert(BTREE *, int);
 void Insert_Of_N(BTREE *, int);
-void ArrangeForDel(BTREENODE *, int);
+void Arrange_for_Delete(BTREE *, BTREENODE *, int);
 bool Search(BTREENODE *, int);
 void SearchForDel(BTREE *, BTREENODE *, int);
 void Split_Child(BTREENODE *, int);
@@ -39,7 +39,8 @@ int Find_ChildIndex(BTREENODE *, int);
 bool Swap_Keys_Left(BTREENODE *, int);
 bool Swap_Keys_Right(BTREENODE *, int);
 BTREENODE *Merge_Nodes(BTREENODE *, int);
-int Find_KeyPrime(BTREENODE *, int);
+int Find_KeyPrime_Presuccecor(BTREENODE *, int);
+int Find_KeyPrime_succecor(BTREENODE *, int);
 void Print_Tree(BTREENODE *, int);
 void Final_Delete(BTREENODE *, int);
 void Deletion(BTREE *, int);
@@ -64,6 +65,24 @@ int main()
     Insert(&tree, 100);
     Print_Tree(tree.root, 0);
     Deletion(&tree, 40);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 20);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 100);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 70);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 80);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 30);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 10);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 50);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 60);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 90);
     Print_Tree(tree.root, 0);
     printf("END");
     return 0;
@@ -264,23 +283,40 @@ void SearchForDel(BTREE *tree, BTREENODE *node, int keyValue)
             {
                 // 삭제 가능한 환경을 구축해야함.
                 // ArrangeForDel 안에서 Final_Delete를 실행한다.
-                ArrangeForDel(tree->root, keyValue);
+                Arrange_for_Delete(tree, tree->root, keyValue);
             }
         }
+
+        //! key를 찾았는데, leaf노드가 아니고, 키 개수가 충분하지 않은 경우
+        else if (!node->leaf && node->KeyCount < T)
+        {
+            Arrange_for_Delete(tree, tree->root, keyValue);
+        }
+
         else
         {
-            // k`을 찾아서 swap
+            //! k`을 찾는다.
             int childIndex = Find_ChildIndex(node, keyValue);
-            int keyPrime = Find_KeyPrime(node->childs[childIndex], keyValue);
-            node->keys[index] = keyPrime;
-            ArrangeForDel(tree->root, keyValue);
+            int keyPrime;
+            if (node->childs[childIndex]->KeyCount >= T)
+            {
+                keyPrime = Find_KeyPrime_Presuccecor(node->childs[childIndex], keyValue);
+                node->keys[index] = keyPrime;
+                Arrange_for_Delete(tree, tree->root->childs[childIndex], keyValue);
+            }
+            else
+            {
+                keyPrime = Find_KeyPrime_succecor(node->childs[childIndex + 1], keyValue);
+                node->keys[index] = keyPrime;
+                Arrange_for_Delete(tree, tree->root->childs[childIndex + 1], keyValue);
+            }
         }
-        return;
+        // return;
     }
 }
 
 // 후행 자식 노드의 가장 작은 값을 반환한다. (origin, )
-int Find_KeyPrime(BTREENODE *node, int keyValue)
+int Find_KeyPrime_Presuccecor(BTREENODE *node, int keyValue)
 {
     if (node->leaf)
     {
@@ -289,7 +325,18 @@ int Find_KeyPrime(BTREENODE *node, int keyValue)
         return keyPrime;
     }
     else
-        Find_KeyPrime(node->childs[node->KeyCount], keyValue);
+        Find_KeyPrime_Presuccecor(node->childs[node->KeyCount], keyValue);
+}
+int Find_KeyPrime_succecor(BTREENODE *node, int keyValue)
+{
+    if (node->leaf)
+    {
+        int keyPrime = node->keys[0];
+        node->keys[0] = keyValue;
+        return keyPrime;
+    }
+    else
+        Find_KeyPrime_succecor(node->childs[0], keyValue);
 }
 
 int Get_Rand_Int()
@@ -310,74 +357,100 @@ int Find_Value(BTREENODE *node, int keyValue)
     return -1;
 }
 
-void ArrangeForDel(BTREENODE *node, int keyValue)
+void Arrange_for_Delete(BTREE *tree, BTREENODE *node, int keyValue)
 {
-    int childIndex = Find_ChildIndex(node, keyValue);
 
+    int childIndex = Find_ChildIndex(node, keyValue);
     // 정렬이 되어 있는 상태. key가 해당 노드에 없을 때,
-    printf("node's leaf :: %d\n", node->leaf);
-    printf("node's first key :: %d\n", node->keys[0]);
+    // printf("node's leaf :: %d\n", node->leaf);
+    // printf("node's first key :: %d\n", node->keys[0]);
     if (node->leaf)
     {
         Final_Delete(node, childIndex);
+        return;
     }
 
     if (node->childs[childIndex]->KeyCount < T)
     {
-        printf("childIndex :: %d\n", childIndex);
 
         //! 0 < childIndex < node->keycount - 1
-        if (childIndex > 0 && childIndex < node->KeyCount - 1){
+        if (childIndex > 0 && childIndex < node->KeyCount - 1)
+        {
             // 왼쪽 자식이 키가 많을 경우
-            if (node->childs[childIndex - 1]->KeyCount >= T){
+            if (node->childs[childIndex - 1]->KeyCount >= T)
+            {
                 Swap_Keys_Left(node, childIndex);
                 Shift_to_Right(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
             // 오른쪽 자식이 키가 많을 경우
-            else if (node->childs[childIndex + 1]->KeyCount >= T){
+            else if (node->childs[childIndex + 1]->KeyCount >= T)
+            {
                 Swap_Keys_Right(node, childIndex);
                 Shift_to_Left(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            else {
+            else
+            {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
-                ArrangeForDel(child_node, keyValue);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
             }
         }
 
         //! childIndex == 0
-        else if (childIndex == 0){
+        else if (childIndex == 0)
+        {
 
             // 오른쪽 자식이 키가 많을 경우
-            if (node->childs[childIndex + 1]->KeyCount >= T){
+            if (node->childs[childIndex + 1]->KeyCount >= T)
+            {
                 Swap_Keys_Right(node, childIndex);
                 Shift_to_Left(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            else {
+            else
+            {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
-                ArrangeForDel(child_node, keyValue);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
             }
         }
 
         //! childIndex == node->keycount
-        else {
+        else
+        {
             // 오른쪽 자식이 키가 많을 경우
-            if (node->childs[childIndex - 1]->KeyCount >= T){
+            if (node->childs[childIndex - 1]->KeyCount >= T)
+            {
                 Swap_Keys_Left(node, childIndex);
                 Shift_to_Right(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            else {
+            else
+            {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
-                ArrangeForDel(child_node, keyValue);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
             }
         }
     }
-    else {
+    else
+    {
         printf("enough\n");
-        ArrangeForDel(node->childs[childIndex], keyValue);
+        Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
     }
 }
 
@@ -385,7 +458,6 @@ void ArrangeForDel(BTREENODE *node, int keyValue)
 void Final_Delete(BTREENODE *node, int index)
 {
     int keyValue = node->keys[index];
-    printf("%d", keyValue);
     for (int i = index; i < node->KeyCount - 1; ++i)
     {
         node->keys[i] = node->keys[i + 1];
@@ -424,8 +496,6 @@ bool Swap_Keys_Right(BTREENODE *node, int childIndex)
     node->keys[childIndex] = tmp_key;
 }
 
-
-
 void Shift_to_Left(BTREENODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
@@ -433,16 +503,18 @@ void Shift_to_Left(BTREENODE *node, int childIndex)
     node->childs[childIndex]->keys[target_position] = node->childs[childIndex + 1]->keys[0];
     // 후행 자식 노드의 첫번째 포인터를 목표 자식 노드의 마지막으로 이동
     node->childs[childIndex]->childs[target_position + 1] = node->childs[childIndex + 1]->childs[0];
+
     // 후행 자식 노드의 key들을 왼쪽으로 한칸씩 이동
+    int target_position_2 = node->childs[childIndex + 1]->KeyCount;
     int i = 0;
-    while (i < target_position - 1)
+    while (i < target_position_2 - 1)
     {
         node->childs[childIndex + 1]->keys[i] = node->childs[childIndex + 1]->keys[i + 1];
         ++i;
     }
     // 후행 자식 노드의 자식들을 왼쪽으로 한칸씩 이동
     i = 0;
-    while (i < target_position)
+    while (i < target_position_2)
     {
         node->childs[childIndex + 1]->childs[i] = node->childs[childIndex + 1]->childs[i + 1];
         ++i;
@@ -504,7 +576,7 @@ BTREENODE *Merge_Nodes(BTREENODE *node, int childIndex)
         {
             node->keys[i] = node->keys[i + 1];
         }
-        for (int i = childIndex; i < node->KeyCount; ++i)
+        for (int i = childIndex + 1; i < node->KeyCount; ++i) //! <<---------------- 여기가 문제였다...
         {
             node->childs[i] = node->childs[i + 1];
         }
@@ -530,14 +602,14 @@ BTREENODE *Merge_Nodes(BTREENODE *node, int childIndex)
         // 부모 노드의 선행 자식 노드의 keyCount 갱신
         node->childs[childIndex - 1]->KeyCount = 2 * T - 1;
         // 부모 노드의 key 갱신 및 child 갱신
-        for (int i = childIndex; i < node->KeyCount - 1; ++i)
-        {
-            node->keys[i] = node->keys[i + 1];
-        }
-        for (int i = childIndex; i < node->KeyCount; ++i)
-        {
-            node->childs[i] = node->childs[i + 1];
-        }
+        // for (int i = childIndex; i < node->KeyCount - 1; ++i)
+        // {
+        //     node->keys[i] = node->keys[i + 1];
+        // }
+        // for (int i = childIndex; i < node->KeyCount; ++i)
+        // {
+        //     node->childs[i] = node->childs[i + 1];
+        // }
         //! 부모노드의 key count 갱신해야함.
         //! 노드의 key count --;
         node->KeyCount--;
