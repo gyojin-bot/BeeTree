@@ -4,7 +4,7 @@
 #include <time.h>
 /*
     1) search == True >> swap 하고 delete
-    2) search == False >> 반복[has_Keyvalue(sub 트리를 결정해야 한다.) > search] 하고 swap 대상 leaf에서 찾고 그 키와 swap한다.
+    2) search == False >> 반복[Find_ChildIndex(sub 트리를 결정해야 한다.) > search] 하고 swap 대상 leaf에서 찾고 그 키와 swap한다.
 */
 #define DEBUG 1
 #define M 3
@@ -35,11 +35,14 @@ bool Search(BTREENODE *, int);
 void Split_Child(BTREENODE *, int);
 int Get_Rand_Int();
 void Traverse(BTREENODE *, int);
-int Has_keyValue(BTREENODE *, int);
+int Find_ChildIndex(BTREENODE *, int);
 bool Swap_Keys(BTREENODE *, int);
 void Swap_Keys_Left(BTREENODE *, int);
 void Swap_Keys_Right(BTREENODE *, int);
 void Merge_Nodes(BTREENODE *, int, int);
+int Find_KeyPrime(BTREENODE *, int);
+void Print_Tree(BTREENODE *, int);
+
 
 int main()
 {
@@ -224,6 +227,71 @@ bool Search(BTREENODE *node, int keyValue)
     }
 }
 
+// 삭제를 위한 검색 함수
+bool SearchForDel(BTREENODE *node, int keyValue)
+{
+    int index = 0;
+    while (index < node->KeyCount && keyValue > node->keys[index])
+    {
+        index++;
+    }
+    if (index <= node->KeyCount && keyValue == node->keys[index])
+    {
+        // 있으면 리프인가? 내부인가?
+        if (node->leaf)
+        {
+            // 리프이면서 leaf의 keycount 가 T-1 이상인 경우 바로 삭제한다. 
+            if (node->KeyCount > T - 1)
+            {
+                for (int i = index; i < node->KeyCount - 1; ++i)
+                {
+                    node->keys[i] = node->keys[i + 1];
+                }
+                node->KeyCount--;
+                printf("DELEITION is COMPLETE..!;");
+                return;
+            }
+
+            // leaf의 keycount가 T-1보다 적은 경우 삭제가능한 환경을 구축해야해서, DELETION을 만들어야한다.
+            else
+            {
+                // 삭제 가능한 환경을 구축해야함.
+                Delete
+            }
+        }
+        else
+        {
+            // k`을 찾아서 swap
+            int childIndex = Find_ChildIndex(node, keyValue);
+            int keyPrime = Find_KeyPrime(node->childs[childIndex], keyValue);
+            node->keys[index] = keyPrime;
+            Delete
+        }
+        return true;
+    }
+    else if (node->leaf)
+    {
+        return false;
+    }
+    else
+    {
+        return Search(node->childs[index], keyValue);
+    }
+}
+
+// 후행 자식 노드의 가장 작은 값을 반환한다. (origin, )
+int Find_KeyPrime(BTREENODE *node, int keyValue)
+{
+    if (node->leaf)
+    {
+        int keyPrime = node->keys[node->KeyCount-1];
+        node->keys[node->KeyCount-1] = keyValue;
+        return keyPrime;
+    } 
+    else Find_KeyPrime(node->childs[node->KeyCount], keyValue);
+}
+
+
 int Get_Rand_Int()
 {
 
@@ -249,9 +317,12 @@ void Traverse(BTREENODE *p, int level)
     printf("\n");
 }
 
-int Find_Value(BTREENODE* node, int keyValue){
-    for(int idx = 0; idx< node->KeyCount; ++idx) {
-        if(node->keys[idx] == keyValue) {
+int Find_Value(BTREENODE *node, int keyValue)
+{
+    for (int idx = 0; idx < node->KeyCount; ++idx)
+    {
+        if (node->keys[idx] == keyValue)
+        {
             return idx;
         }
     }
@@ -261,8 +332,10 @@ int Find_Value(BTREENODE* node, int keyValue){
 void Delete(BTREENODE *node, int keyValue)
 {
     int childIndex = Find_Value(node, keyValue);
-    if(childIndex != -1) {
-        if(node->leaf) {
+    if (childIndex != -1)
+    {
+        if (node->leaf)
+        {
             // 삭제 후 종료
             // key를 찾았으니, 그 이후 키들을 앞으로 한칸씩 민다.
             for (int i = childIndex; i < node->KeyCount - 1; ++i)
@@ -273,30 +346,37 @@ void Delete(BTREENODE *node, int keyValue)
             printf("DELEITION is COMPLETE..!;");
             return;
         }
-        else { // key가 노드에 존재하나 그 노드가 내부노드인 상태, (정렬이 되어있지 않을 가능성 있음)
+        else
+        { // key가 노드에 존재하나 그 노드가 내부노드인 상태, (정렬이 되어있지 않을 가능성 있음)
             // 좌측이랑 무언가 할 수 있다는 의미야.
-            if(childIndex >= 1 && node->childs[childIndex - 1]->KeyCount < T) {
+            if (childIndex >= 1 && node->childs[childIndex - 1]->KeyCount < T)
+            {
                 Merge_Nodes(node, keyValue, childIndex);
                 Delete(node->childs[childIndex], keyValue);
-            }   
+            }
             // 우측이랑 무언가를 할 수 있다.
-            else if(node->childs[childIndex+1]->KeyCount < T){
-                Merge_Nodes(node, keyValue, childIndex+1);
+            else if (node->childs[childIndex + 1]->KeyCount < T)
+            {
+                Merge_Nodes(node, keyValue, childIndex + 1);
                 Delete(node->childs[childIndex], keyValue);
             }
-            else {
-                //! 스왑을 하기 이전에 서브트리를 탐색하여 leaf의 키와 
-                if(!Swap_Keys(node, childIndex)) {
+            else
+            {
+                //! 스왑을 하기 이전에 서브트리를 탐색하여 leaf의 키와
+                if (!Swap_Keys(node, childIndex))
+                {
                     Delete(node->childs[childIndex], keyValue);
                 }
-                else {
-                    Delete(node->childs[childIndex+1], keyValue);
+                else
+                {
+                    Delete(node->childs[childIndex + 1], keyValue);
                 }
             }
         }
     }
-    else { // 정렬이 되어 있는 상태. key가 해당 노드에 없을 때,
-        childIndex = Has_keyValue(node, keyValue);
+    else
+    { // 정렬이 되어 있는 상태. key가 해당 노드에 없을 때,
+        childIndex = Find_ChildIndex(node, keyValue);
         if (node->childs[childIndex]->KeyCount < T)
         {
             if (node->childs[childIndex - 1]->KeyCount < T && node->childs[childIndex + 1]->KeyCount < T)
@@ -370,11 +450,10 @@ void Delete(BTREENODE *node, int keyValue)
     }
 }
 
-int Has_keyValue(BTREENODE *node, int keyValue)
+int Find_ChildIndex(BTREENODE *node, int keyValue)
 {
 
     int index = 0;
-
     for (index = 0; index < node->KeyCount; ++index)
     {
         if (keyValue <= node->keys[index])
@@ -419,6 +498,7 @@ void Swap_Keys_Right(BTREENODE *node, int childIndex)
 }
 
 void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
+
 {
     // 선행 자식 노드가 무조건 있는 경우
     if (childIndex >= 1)
@@ -452,7 +532,7 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         {
             node->childs[childIndex + i] = node->childs[childIndex + i + 1];
         }
-        node->KeyCount --;
+        node->KeyCount--;
     }
 
     // 선행 자식 노드가 없는 경우
@@ -489,4 +569,32 @@ void Merge_Nodes(BTREENODE *node, int keyValue, int childIndex)
         }
         node->KeyCount--;
     }
+}
+
+// Tree를 출력한다.
+void Print_Tree(BTREENODE *node, int level)
+{
+    // leaf가 node가 아니면 DFS 실행함
+    if (!node->leaf)
+    {
+        for (int i = 0; i < node->KeyCount; i++)
+        {
+            Print_Tree(node->childs[i], level+1);
+        }
+    }
+    // leaf를 발견한 후, 레벨을 구분하기 위해서 아래와 같이 출력
+    // 예를 들어 레벨이 2이면 -------| --------| keys[]가 출력됨
+    for (int i = 0; i < level; i++)
+    {
+        printf("--------------------|");
+    }
+
+    // 해당 node의 key값을 출력
+    for (int i = 0; i < node->KeyCount; i++)
+    {
+        printf("%d", node->keys[i]);
+    }
+    // 개행 두번으로 시각편의성 도모
+    printf("\n\n");
+    return;
 }
