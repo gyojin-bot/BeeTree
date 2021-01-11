@@ -3,34 +3,34 @@
 #include <stdbool.h>
 #include <time.h>
 /*
-    1) search == True >> swap ÇÏ°í delete
-    2) search == False >> ¹İº¹[Find_ChildIndex(sub Æ®¸®¸¦ °áÁ¤ÇØ¾ß ÇÑ´Ù.) > search] ÇÏ°í swap ´ë»ó leaf¿¡¼­ Ã£°í ±× Å°¿Í swapÇÑ´Ù.
+    1) search == True >> swap í•˜ê³  delete
+    2) search == False >> ë°˜ë³µ[Find_ChildIndex(sub íŠ¸ë¦¬ë¥¼ ê²°ì •í•´ì•¼ í•œë‹¤.) > search] í•˜ê³  swap ëŒ€ìƒ leafì—ì„œ ì°¾ê³  ê·¸ í‚¤ì™€ swapí•œë‹¤.
 */
 #define DEBUG 1
 #define M 3
 #define T 2
 typedef struct BtreeNode
 {
-    int KeyCount;                // keyÀÇ °¹¼ö
-    bool leaf;                   // leafÀÎÁö ÆÇÁ¤
-    int keys[2 * T - 1];         // node°¡ °¡Áö°í ÀÖ´Â key °ªµé
-    struct BtreeNode *childs[M]; // ÇöÀç ³ëµå¿Í ¿¬°áµÇ¾îÀÖ´Â childÀÇ ¹è¿­ÀÌ´Ù.
+    int KeyCount;                // keyì˜ ê°¯ìˆ˜
+    bool leaf;                   // leafì¸ì§€ íŒì •
+    int keys[2 * T - 1];         // nodeê°€ ê°€ì§€ê³  ìˆëŠ” key ê°’ë“¤
+    struct BtreeNode *childs[M]; // í˜„ì¬ ë…¸ë“œì™€ ì—°ê²°ë˜ì–´ìˆëŠ” childì˜ ë°°ì—´ì´ë‹¤.
 } BTREENODE;
 
-// tree ±¸Á¶Ã¼ ¼±¾ğ
+// tree êµ¬ì¡°ì²´ ì„ ì–¸
 typedef struct Btree
 {
     struct BtreeNode *root;
 } BTREE;
-// Btree¶ó´Â ±¸Á¶Ã¼´Â nodeÆ÷ÀÎÅÍ¸¦ °¡Áø´Ù. (ÀÌ¸§ÀÌ root)
-// ºñÆ®¸® ·çÆ® ³ëµåÀÇ Æ÷ÀÎÅÍ¸¦ °¡ÁüÀ¸·Î¼­ ºñÆ®¸® ÀüÃ¼¿¡ °ü¿©ÇÒ ¼ö ÀÖµµ·ÏÇÑ´Ù.
+// Btreeë¼ëŠ” êµ¬ì¡°ì²´ëŠ” nodeí¬ì¸í„°ë¥¼ ê°€ì§„ë‹¤. (ì´ë¦„ì´ root)
+// ë¹„íŠ¸ë¦¬ ë£¨íŠ¸ ë…¸ë“œì˜ í¬ì¸í„°ë¥¼ ê°€ì§ìœ¼ë¡œì„œ ë¹„íŠ¸ë¦¬ ì „ì²´ì— ê´€ì—¬í•  ìˆ˜ ìˆë„ë¡í•œë‹¤.
 
 BTREENODE *Allocate();
 void Tree_Create(BTREE *);
 void Insert_nonfull(BTREENODE *, int);
 void Insert(BTREE *, int);
 void Insert_Of_N(BTREE *, int);
-void ArrangeForDel(BTREENODE *, int);
+void Arrange_for_Delete(BTREE *, BTREENODE *, int);
 bool Search(BTREENODE *, int);
 void SearchForDel(BTREE *, BTREENODE *, int);
 void Split_Child(BTREENODE *, int);
@@ -39,7 +39,8 @@ int Find_ChildIndex(BTREENODE *, int);
 bool Swap_Keys_Left(BTREENODE *, int);
 bool Swap_Keys_Right(BTREENODE *, int);
 BTREENODE *Merge_Nodes(BTREENODE *, int);
-int Find_KeyPrime(BTREENODE *, int);
+int Find_KeyPrime_Presuccecor(BTREENODE *, int);
+int Find_KeyPrime_succecor(BTREENODE *, int);
 void Print_Tree(BTREENODE *, int);
 void Final_Delete(BTREENODE *, int);
 void Deletion(BTREE *, int);
@@ -65,56 +66,74 @@ int main()
     Print_Tree(tree.root, 0);
     Deletion(&tree, 40);
     Print_Tree(tree.root, 0);
+    Deletion(&tree, 20);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 100);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 70);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 80);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 30);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 10);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 50);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 60);
+    Print_Tree(tree.root, 0);
+    Deletion(&tree, 90);
+    Print_Tree(tree.root, 0);
     printf("END");
     return 0;
 }
 
-// ³ëµå¸¦ »ı¼ºÇÏ±â Àü¿¡ ¸Ş¸ğ¸®¸¦ ÇÒ´çÇÑ´Ù.
+// ë…¸ë“œë¥¼ ìƒì„±í•˜ê¸° ì „ì— ë©”ëª¨ë¦¬ë¥¼ í• ë‹¹í•œë‹¤.
 BTREENODE *Allocate()
 {
 
-    // BTREENODEÀÇ Å©±â¸¸Å­ ÇÒ´çÇÑ´Ù. (mallocÀº ¸Ş¸ğ¸®¸¦ ÇÒ´çÇÏ°í, ÇÒ´çÇÑ ÁÖ¼Ò°ªÀ» ¹İÈ¯ÇÑ´Ù.)
+    // BTREENODEì˜ í¬ê¸°ë§Œí¼ í• ë‹¹í•œë‹¤. (mallocì€ ë©”ëª¨ë¦¬ë¥¼ í• ë‹¹í•˜ê³ , í• ë‹¹í•œ ì£¼ì†Œê°’ì„ ë°˜í™˜í•œë‹¤.)
     BTREENODE *new_node = (BTREENODE *)malloc(sizeof(BTREENODE));
-    // BTREENODE*ÇüÅÂÀÇ new_node ¼±¾ğ = BTREENODE*ÀÇ ÇüÅÂÀÇ ¹İÈ¯µÈ mallocÀÇ ÁÖ¼Ò°ª
+    // BTREENODE*í˜•íƒœì˜ new_node ì„ ì–¸ = BTREENODE*ì˜ í˜•íƒœì˜ ë°˜í™˜ëœ mallocì˜ ì£¼ì†Œê°’
 
-    // new_node(BTREENODE*)¸¦ ¹İÈ¯
+    // new_node(BTREENODE*)ë¥¼ ë°˜í™˜
     return new_node;
 }
 
-// Æ®¸®¸¦ ¸¸µç´Ù.
+// íŠ¸ë¦¬ë¥¼ ë§Œë“ ë‹¤.
 void Tree_Create(BTREE *tree)
-{                                     // BTREE´Â root* ÀÇ ÁÖ¼Ò¸¦ °¡Áø ±¸Á¶Ã¼ÀÌ´Ù.
-    BTREENODE *new_node = Allocate(); // »õ ³ëµå¸¦ ¸¸µé±â À§ÇØ Æ÷ÀÎÅÍ¿¡ ÁÖ¼Ò¸¦ ÇÒ´çÇÑ´Ù.
-    new_node->KeyCount = 0;           // »õ·Î¸¸µé¸é key°¡ ¾Èµé¾îÀÖÀ¸¹Ç·Î keycount¸¦ 0À¸·Î ÇÑ´Ù.
-    new_node->leaf = true;            // ¸¶Âù°¡Áö·Î leaf¼Ó¼ºÀ» onÇÑ´Ù.
-    tree->root = new_node;            // new_node°¡ ·çÆ®³ëµå°¡ µÇ¹Ç·Î treeÀÇ root´Â new_node·Î ÇÑ´Ù. (µÑ´Ù Æ÷ÀÎÅÍÀÌ´Ù.)
+{                                     // BTREEëŠ” root* ì˜ ì£¼ì†Œë¥¼ ê°€ì§„ êµ¬ì¡°ì²´ì´ë‹¤.
+    BTREENODE *new_node = Allocate(); // ìƒˆ ë…¸ë“œë¥¼ ë§Œë“¤ê¸° ìœ„í•´ í¬ì¸í„°ì— ì£¼ì†Œë¥¼ í• ë‹¹í•œë‹¤.
+    new_node->KeyCount = 0;           // ìƒˆë¡œë§Œë“¤ë©´ keyê°€ ì•ˆë“¤ì–´ìˆìœ¼ë¯€ë¡œ keycountë¥¼ 0ìœ¼ë¡œ í•œë‹¤.
+    new_node->leaf = true;            // ë§ˆì°¬ê°€ì§€ë¡œ leafì†ì„±ì„ oní•œë‹¤.
+    tree->root = new_node;            // new_nodeê°€ ë£¨íŠ¸ë…¸ë“œê°€ ë˜ë¯€ë¡œ treeì˜ rootëŠ” new_nodeë¡œ í•œë‹¤. (ë‘˜ë‹¤ í¬ì¸í„°ì´ë‹¤.)
 }
 
-// key °¹¼ö°¡ 2T-1º¸´Ù ÀÛÀº node¿¡ °ªÀ» »ğÀÔÇÑ´Ù.
+// key ê°¯ìˆ˜ê°€ 2T-1ë³´ë‹¤ ì‘ì€ nodeì— ê°’ì„ ì‚½ì…í•œë‹¤.
 void Insert_nonfull(BTREENODE *node, int KeyValue)
 {
-    // KeyIndex´Â nodeÀÇ key °¹¼ö¸¦ ÇÒ´çÇÑ´Ù.
-    // Áï, key[]ÀÇ °¡Àå ¸¶Áö¸· keyÀÇ idx¸¦ ÇÒ´çÇÑ´Ù.
+    // KeyIndexëŠ” nodeì˜ key ê°¯ìˆ˜ë¥¼ í• ë‹¹í•œë‹¤.
+    // ì¦‰, key[]ì˜ ê°€ì¥ ë§ˆì§€ë§‰ keyì˜ idxë¥¼ í• ë‹¹í•œë‹¤.
     int KeyIndex = node->KeyCount;
 
-    // ¸¸¾à node°¡ leaf node¶ó¸é
+    // ë§Œì•½ nodeê°€ leaf nodeë¼ë©´
     if (node->leaf)
     {
 
-        // nodeÀÇ key °¹¼ö°¡ 1 ÀÌ»óÀÌ°í (ºó ³ëµå°¡ ¾Æ´Ï°í),
-        // ³ÖÀ» key°ªÀÌ key[idx]º¸´Ù ÀÛ¾ÆÁú¶§±îÁö idx¸¦ ÁÙÀÎ´Ù.
-        // idx´Â »õ·Î¿î key°ªÀ» ³ÖÀ» ÀÚ¸®°¡ µÈ´Ù.
+        // nodeì˜ key ê°¯ìˆ˜ê°€ 1 ì´ìƒì´ê³  (ë¹ˆ ë…¸ë“œê°€ ì•„ë‹ˆê³ ),
+        // ë„£ì„ keyê°’ì´ key[idx]ë³´ë‹¤ ì‘ì•„ì§ˆë•Œê¹Œì§€ idxë¥¼ ì¤„ì¸ë‹¤.
+        // idxëŠ” ìƒˆë¡œìš´ keyê°’ì„ ë„£ì„ ìë¦¬ê°€ ëœë‹¤.
         while (KeyIndex >= 1 && KeyValue < node->keys[KeyIndex - 1])
         {
-            // »õ·Î¿î key°ªÀ» ³ÖÀ» ÀÚ¸®¸¦ ¸¶·ÃÇØÁØ´Ù. (ÇÑÄ­¾¿ ¿À¸¥ÂÊÀ¸·Î ÀÌµ¿ÇÑ´Ù.)
+            // ìƒˆë¡œìš´ keyê°’ì„ ë„£ì„ ìë¦¬ë¥¼ ë§ˆë ¨í•´ì¤€ë‹¤. (í•œì¹¸ì”© ì˜¤ë¥¸ìª½ìœ¼ë¡œ ì´ë™í•œë‹¤.)
             node->keys[KeyIndex] = node->keys[KeyIndex - 1];
             KeyIndex--;
         }
 
-        // key°ªÀ» ³ÖÀ» ÀÚ¸®¸¦ Ã£¾Ò°í, À§¿¡¼­ ÇØ´ç ÀÚ¸®µµ ºñ¿ö³ù±â ¶§¹®¿¡
-        // À§¿¡¼­ Ã£Àº key[idx]¿¡ »õ·Î¿î key°ªÀ» ÇÒ´çÇÑ´Ù.
+        // keyê°’ì„ ë„£ì„ ìë¦¬ë¥¼ ì°¾ì•˜ê³ , ìœ„ì—ì„œ í•´ë‹¹ ìë¦¬ë„ ë¹„ì›Œë†¨ê¸° ë•Œë¬¸ì—
+        // ìœ„ì—ì„œ ì°¾ì€ key[idx]ì— ìƒˆë¡œìš´ keyê°’ì„ í• ë‹¹í•œë‹¤.
         node->keys[KeyIndex] = KeyValue;
-        // ±×¸®°í ³ëµåÀÇ keycount¸¦ 1 ´Ã·ÁÁØ´Ù.
+        // ê·¸ë¦¬ê³  ë…¸ë“œì˜ keycountë¥¼ 1 ëŠ˜ë ¤ì¤€ë‹¤.
         node->KeyCount += 1;
     }
     else
@@ -136,24 +155,24 @@ void Insert_nonfull(BTREENODE *node, int KeyValue)
     }
 }
 
-// nodeÀÇ key °¹¼ö°¡ 2T-1ÀÎ °æ¿ì, node¸¦ ºĞ¸®ÇÑ´Ù.
+// nodeì˜ key ê°¯ìˆ˜ê°€ 2T-1ì¸ ê²½ìš°, nodeë¥¼ ë¶„ë¦¬í•œë‹¤.
 void Split_Child(BTREENODE *parentNode, int ChildIndex)
 {
-    // right_node´Â ºĞ¸®ÇÏ¸é¼­ ¸¸µé¾îÁú »õ·Î¿î nodeÀÌ±â ¶§¹®¿¡ ¸Ş¸ğ¸®¸¦ »õ·Î ÇÒ´çÇÑ´Ù.
+    // right_nodeëŠ” ë¶„ë¦¬í•˜ë©´ì„œ ë§Œë“¤ì–´ì§ˆ ìƒˆë¡œìš´ nodeì´ê¸° ë•Œë¬¸ì— ë©”ëª¨ë¦¬ë¥¼ ìƒˆë¡œ í• ë‹¹í•œë‹¤.
     BTREENODE *right_node = Allocate();
 
     //
     BTREENODE *left_node = parentNode->childs[ChildIndex];
 
-    // right_nodeÀÇ leaf ¼Ó¼ºÀº left_nodeÀÇ leaf¸¦ ¹Ş¾Æ¿Â´Ù.
+    // right_nodeì˜ leaf ì†ì„±ì€ left_nodeì˜ leafë¥¼ ë°›ì•„ì˜¨ë‹¤.
     right_node->leaf = left_node->leaf;
 
-    // 2T-1¸¦ ºĞ¸®ÇÏ¸é¼­ °¡¿îµ¥ °ªÀº ºÎ¸ğ·Î ¿Ã¸®°í
-    // ³ª¸ÓÁö  2T-2°³ÀÇ keyµéÀ» left¿Í right°¡ ³ª´©¾î°¡Áø´Ù.
+    // 2T-1ë¥¼ ë¶„ë¦¬í•˜ë©´ì„œ ê°€ìš´ë° ê°’ì€ ë¶€ëª¨ë¡œ ì˜¬ë¦¬ê³ 
+    // ë‚˜ë¨¸ì§€  2T-2ê°œì˜ keyë“¤ì„ leftì™€ rightê°€ ë‚˜ëˆ„ì–´ê°€ì§„ë‹¤.
     right_node->KeyCount = T - 1;
     left_node->KeyCount = T - 1;
 
-    // ±×·¡¼­ left_node[i]
+    // ê·¸ë˜ì„œ left_node[i]
     for (int i = 0; i < T - 1; ++i)
     {
         right_node->keys[i] = left_node->keys[T + i];
@@ -172,7 +191,7 @@ void Split_Child(BTREENODE *parentNode, int ChildIndex)
     parentNode->KeyCount++;
 }
 
-// key°ªÀ» tree¿¡ »ğÀÔÇÑ´Ù.
+// keyê°’ì„ treeì— ì‚½ì…í•œë‹¤.
 void Insert(BTREE *tree, int keyValue)
 {
     BTREENODE *rootNode = tree->root;
@@ -239,7 +258,7 @@ bool Search(BTREENODE *node, int keyValue)
 
 void SearchForDel(BTREE *tree, BTREENODE *node, int keyValue)
 {
-    // ÇØ´ç key°¡ ÇöÀç node¿¡ ÀÖ´Â°¡?
+    // í•´ë‹¹ keyê°€ í˜„ì¬ nodeì— ìˆëŠ”ê°€?
     int index = Find_Value(node, keyValue);
     if (index == -1)
     {
@@ -247,40 +266,57 @@ void SearchForDel(BTREE *tree, BTREENODE *node, int keyValue)
     }
     else
     {
-        // ÀÖÀ¸¸é ¸®ÇÁÀÎ°¡? ³»ºÎÀÎ°¡?
+        // ìˆìœ¼ë©´ ë¦¬í”„ì¸ê°€? ë‚´ë¶€ì¸ê°€?
         if (node->leaf)
         {
-            // ¸®ÇÁÀÌ¸é¼­ leafÀÇ keycount °¡ T-1 ÀÌ»óÀÎ °æ¿ì ¹Ù·Î »èÁ¦ÇÑ´Ù.
+            // ë¦¬í”„ì´ë©´ì„œ leafì˜ keycount ê°€ T-1 ì´ìƒì¸ ê²½ìš° ë°”ë¡œ ì‚­ì œí•œë‹¤.
 
-            //! ¾Æ·¡ »çÇ× ¼öÁ¤ÇÔ.
+            //! ì•„ë˜ ì‚¬í•­ ìˆ˜ì •í•¨.
             if (node->KeyCount > T - 1)
             {
                 int index = Find_ChildIndex(node, keyValue);
                 Final_Delete(node, index);
             }
 
-            // leafÀÇ keycount°¡ T-1º¸´Ù ÀûÀº °æ¿ì »èÁ¦°¡´ÉÇÑ È¯°æÀ» ±¸ÃàÇØ¾ßÇØ¼­, DELETIONÀ» ¸¸µé¾î¾ßÇÑ´Ù.
+            // leafì˜ keycountê°€ T-1ë³´ë‹¤ ì ì€ ê²½ìš° ì‚­ì œê°€ëŠ¥í•œ í™˜ê²½ì„ êµ¬ì¶•í•´ì•¼í•´ì„œ, DELETIONì„ ë§Œë“¤ì–´ì•¼í•œë‹¤.
             else
             {
-                // »èÁ¦ °¡´ÉÇÑ È¯°æÀ» ±¸ÃàÇØ¾ßÇÔ.
-                // ArrangeForDel ¾È¿¡¼­ Final_Delete¸¦ ½ÇÇàÇÑ´Ù.
-                ArrangeForDel(tree->root, keyValue);
+                // ì‚­ì œ ê°€ëŠ¥í•œ í™˜ê²½ì„ êµ¬ì¶•í•´ì•¼í•¨.
+                // ArrangeForDel ì•ˆì—ì„œ Final_Deleteë¥¼ ì‹¤í–‰í•œë‹¤.
+                Arrange_for_Delete(tree, tree->root, keyValue);
             }
         }
+
+        //! keyë¥¼ ì°¾ì•˜ëŠ”ë°, leafë…¸ë“œê°€ ì•„ë‹ˆê³ , í‚¤ ê°œìˆ˜ê°€ ì¶©ë¶„í•˜ì§€ ì•Šì€ ê²½ìš°
+        else if (!node->leaf && node->KeyCount < T)
+        {
+            Arrange_for_Delete(tree, tree->root, keyValue);
+        }
+
         else
         {
-            // k`À» Ã£¾Æ¼­ swap
+            //! k`ì„ ì°¾ëŠ”ë‹¤.
             int childIndex = Find_ChildIndex(node, keyValue);
-            int keyPrime = Find_KeyPrime(node->childs[childIndex], keyValue);
-            node->keys[index] = keyPrime;
-            ArrangeForDel(tree->root, keyValue);
+            int keyPrime;
+            if (node->childs[childIndex]->KeyCount >= T)
+            {
+                keyPrime = Find_KeyPrime_Presuccecor(node->childs[childIndex], keyValue);
+                node->keys[index] = keyPrime;
+                Arrange_for_Delete(tree, tree->root->childs[childIndex], keyValue);
+            }
+            else
+            {
+                keyPrime = Find_KeyPrime_succecor(node->childs[childIndex + 1], keyValue);
+                node->keys[index] = keyPrime;
+                Arrange_for_Delete(tree, tree->root->childs[childIndex + 1], keyValue);
+            }
         }
-        return;
+        // return;
     }
 }
 
-// ÈÄÇà ÀÚ½Ä ³ëµåÀÇ °¡Àå ÀÛÀº °ªÀ» ¹İÈ¯ÇÑ´Ù. (origin, )
-int Find_KeyPrime(BTREENODE *node, int keyValue)
+// í›„í–‰ ìì‹ ë…¸ë“œì˜ ê°€ì¥ ì‘ì€ ê°’ì„ ë°˜í™˜í•œë‹¤. (origin, )
+int Find_KeyPrime_Presuccecor(BTREENODE *node, int keyValue)
 {
     if (node->leaf)
     {
@@ -289,7 +325,18 @@ int Find_KeyPrime(BTREENODE *node, int keyValue)
         return keyPrime;
     }
     else
-        Find_KeyPrime(node->childs[node->KeyCount], keyValue);
+        Find_KeyPrime_Presuccecor(node->childs[node->KeyCount], keyValue);
+}
+int Find_KeyPrime_succecor(BTREENODE *node, int keyValue)
+{
+    if (node->leaf)
+    {
+        int keyPrime = node->keys[0];
+        node->keys[0] = keyValue;
+        return keyPrime;
+    }
+    else
+        Find_KeyPrime_succecor(node->childs[0], keyValue);
 }
 
 int Get_Rand_Int()
@@ -310,82 +357,107 @@ int Find_Value(BTREENODE *node, int keyValue)
     return -1;
 }
 
-void ArrangeForDel(BTREENODE *node, int keyValue)
+void Arrange_for_Delete(BTREE *tree, BTREENODE *node, int keyValue)
 {
-    int childIndex = Find_ChildIndex(node, keyValue);
 
-    // Á¤·ÄÀÌ µÇ¾î ÀÖ´Â »óÅÂ. key°¡ ÇØ´ç ³ëµå¿¡ ¾øÀ» ¶§,
-    printf("node's leaf :: %d\n", node->leaf);
-    printf("node's first key :: %d\n", node->keys[0]);
+    int childIndex = Find_ChildIndex(node, keyValue);
+    // ì •ë ¬ì´ ë˜ì–´ ìˆëŠ” ìƒíƒœ. keyê°€ í•´ë‹¹ ë…¸ë“œì— ì—†ì„ ë•Œ,
+    // printf("node's leaf :: %d\n", node->leaf);
+    // printf("node's first key :: %d\n", node->keys[0]);
     if (node->leaf)
     {
         Final_Delete(node, childIndex);
+        return;
     }
 
     if (node->childs[childIndex]->KeyCount < T)
     {
-        printf("childIndex :: %d\n", childIndex);
 
         //! 0 < childIndex < node->keycount - 1
-        if (childIndex > 0 && childIndex < node->KeyCount - 1){
-            // ¿ŞÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
-            if (node->childs[childIndex - 1]->KeyCount >= T){
+        if (childIndex > 0 && childIndex < node->KeyCount - 1)
+        {
+            // ì™¼ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            if (node->childs[childIndex - 1]->KeyCount >= T)
+            {
                 Swap_Keys_Left(node, childIndex);
                 Shift_to_Right(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            // ¿À¸¥ÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
-            else if (node->childs[childIndex + 1]->KeyCount >= T){
+            // ì˜¤ë¥¸ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            else if (node->childs[childIndex + 1]->KeyCount >= T)
+            {
                 Swap_Keys_Right(node, childIndex);
                 Shift_to_Left(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            else {
+            else
+            {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
-                ArrangeForDel(child_node, keyValue);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
             }
         }
 
         //! childIndex == 0
-        else if (childIndex == 0){
+        else if (childIndex == 0)
+        {
 
-            // ¿À¸¥ÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
-            if (node->childs[childIndex + 1]->KeyCount >= T){
+            // ì˜¤ë¥¸ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            if (node->childs[childIndex + 1]->KeyCount >= T)
+            {
                 Swap_Keys_Right(node, childIndex);
                 Shift_to_Left(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            else {
+            else
+            {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
-                ArrangeForDel(child_node, keyValue);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
             }
         }
 
         //! childIndex == node->keycount
-        else {
-            // ¿À¸¥ÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
-            if (node->childs[childIndex - 1]->KeyCount >= T){
+        else
+        {
+            // ì˜¤ë¥¸ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            if (node->childs[childIndex - 1]->KeyCount >= T)
+            {
                 Swap_Keys_Left(node, childIndex);
                 Shift_to_Right(node, childIndex);
-                ArrangeForDel(node->childs[childIndex], keyValue);
+                Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            else {
+            else
+            {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
-                ArrangeForDel(child_node, keyValue);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
             }
         }
     }
-    else {
+    else
+    {
         printf("enough\n");
-        ArrangeForDel(node->childs[childIndex], keyValue);
+        Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
     }
 }
 
-// »èÁ¦¸¦ À§ÇÑ °Ë»ö ÇÔ¼ö (index´Â »èÁ¦ÇÒ ´ë»ó key°ªÀÇ À§Ä¡ÀÌ´Ù.)
+// ì‚­ì œë¥¼ ìœ„í•œ ê²€ìƒ‰ í•¨ìˆ˜ (indexëŠ” ì‚­ì œí•  ëŒ€ìƒ keyê°’ì˜ ìœ„ì¹˜ì´ë‹¤.)
 void Final_Delete(BTREENODE *node, int index)
 {
     int keyValue = node->keys[index];
-    printf("%d", keyValue);
     for (int i = index; i < node->KeyCount - 1; ++i)
     {
         node->keys[i] = node->keys[i + 1];
@@ -424,44 +496,44 @@ bool Swap_Keys_Right(BTREENODE *node, int childIndex)
     node->keys[childIndex] = tmp_key;
 }
 
-
-
 void Shift_to_Left(BTREENODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
-    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ° key¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸·À¸·Î ÀÌµ¿
+    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ keyë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ìœ¼ë¡œ ì´ë™
     node->childs[childIndex]->keys[target_position] = node->childs[childIndex + 1]->keys[0];
-    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ° Æ÷ÀÎÅÍ¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸·À¸·Î ÀÌµ¿
+    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ í¬ì¸í„°ë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ìœ¼ë¡œ ì´ë™
     node->childs[childIndex]->childs[target_position + 1] = node->childs[childIndex + 1]->childs[0];
-    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¿ŞÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
+
+    // í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì™¼ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
+    int target_position_2 = node->childs[childIndex + 1]->KeyCount;
     int i = 0;
-    while (i < target_position - 1)
+    while (i < target_position_2 - 1)
     {
         node->childs[childIndex + 1]->keys[i] = node->childs[childIndex + 1]->keys[i + 1];
         ++i;
     }
-    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ ÀÚ½ÄµéÀ» ¿ŞÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
+    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ìì‹ë“¤ì„ ì™¼ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
     i = 0;
-    while (i < target_position)
+    while (i < target_position_2)
     {
         node->childs[childIndex + 1]->childs[i] = node->childs[childIndex + 1]->childs[i + 1];
         ++i;
     }
-    // keyCount Á¶Àı
+    // keyCount ì¡°ì ˆ
     node->childs[childIndex]->KeyCount++;
     node->childs[childIndex + 1]->KeyCount--;
 }
 void Shift_to_Right(BTREENODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
-    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¿À¸¥ÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
+    // í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì˜¤ë¥¸ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
     int i = target_position;
     while (i > 0)
     {
         node->childs[childIndex]->keys[i] = node->childs[childIndex]->keys[i - 1];
         --i;
     }
-    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ ÀÚ½ÄµéÀ» ¿À¸¥ÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
+    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ìì‹ë“¤ì„ ì˜¤ë¥¸ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
     i = target_position + 1;
     while (i > 0)
     {
@@ -469,86 +541,86 @@ void Shift_to_Right(BTREENODE *node, int childIndex)
         --i;
     }
     int target_position_2 = node->childs[childIndex - 1]->KeyCount;
-    // ¼±Çà ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸· key¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ°·Î ÀÌµ¿
+    // ì„ í–‰ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ keyë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ë¡œ ì´ë™
     node->childs[childIndex]->keys[0] = node->childs[childIndex - 1]->keys[target_position_2 - 1];
-    // ¼±Çà ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸· Æ÷ÀÎÅÍ¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ°·Î ÀÌµ¿
+    // ì„ í–‰ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ í¬ì¸í„°ë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ë¡œ ì´ë™
     node->childs[childIndex]->childs[0] = node->childs[childIndex - 1]->childs[target_position_2];
-    // keyCount Á¶Àı
+    // keyCount ì¡°ì ˆ
     node->childs[childIndex - 1]->KeyCount--;
     node->childs[childIndex]->KeyCount++;
 }
 
 BTREENODE *Merge_Nodes(BTREENODE *node, int childIndex)
-{ //! ¿©±â´Â ¹«Á¶°Ç ¾çÂÊ ÀÚ½Ä³ëµåÀÇ Å°°¡ T-1ÀÓÀ» ¾Ë°í ÀÖ´Ù...
+{ //! ì—¬ê¸°ëŠ” ë¬´ì¡°ê±´ ì–‘ìª½ ìì‹ë…¸ë“œì˜ í‚¤ê°€ T-1ì„ì„ ì•Œê³  ìˆë‹¤...
 
-    //! childIndex°¡ nodeÀÇ ¸¶Áö¸· ÀÚ½ÄÀÌ ¾Æ´Ñ °æ¿ì
+    //! childIndexê°€ nodeì˜ ë§ˆì§€ë§‰ ìì‹ì´ ì•„ë‹Œ ê²½ìš°
     if (childIndex < node->KeyCount)
     {
-        // ºÎ¸ğ ³ëµåÀÇ childIndex key¸¦ ¼±Çà ÀÚ½Ä ³ëµåÀÇ ³¡À¸·Î ÀÌµ¿
+        // ë¶€ëª¨ ë…¸ë“œì˜ childIndex keyë¥¼ ì„ í–‰ ìì‹ ë…¸ë“œì˜ ëìœ¼ë¡œ ì´ë™
         node->childs[childIndex]->keys[T - 1] = node->keys[childIndex];
-        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
+        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
         for (int i = 0; i < T - 1; ++i)
         {
             node->childs[childIndex]->keys[i + T] = node->childs[childIndex + 1]->keys[i];
         }
-        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ childµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
-        // childs leaf °¡ ¾Æ´Ò ¶§¸¸ ¼öÇà,
+        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ childë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
+        // childs leaf ê°€ ì•„ë‹ ë•Œë§Œ ìˆ˜í–‰,
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex]->childs[i + T] = node->childs[childIndex + 1]->childs[i];
         }
-        // ºÎ¸ğ ³ëµåÀÇ ¼±Çà ÀÚ½Ä ³ëµåÀÇ keyCount °»½Å
+        // ë¶€ëª¨ ë…¸ë“œì˜ ì„ í–‰ ìì‹ ë…¸ë“œì˜ keyCount ê°±ì‹ 
         node->childs[childIndex]->KeyCount = 2 * T - 1;
-        // ºÎ¸ğ ³ëµåÀÇ key °»½Å ¹× child °»½Å
+        // ë¶€ëª¨ ë…¸ë“œì˜ key ê°±ì‹  ë° child ê°±ì‹ 
         for (int i = childIndex; i < node->KeyCount - 1; ++i)
         {
             node->keys[i] = node->keys[i + 1];
         }
-        for (int i = childIndex; i < node->KeyCount; ++i)
+        for (int i = childIndex + 1; i < node->KeyCount; ++i) //! <<---------------- ì—¬ê¸°ê°€ ë¬¸ì œì˜€ë‹¤...
         {
             node->childs[i] = node->childs[i + 1];
         }
-        //! ºÎ¸ğ ³ëµåÀÇ key count °»½Å
+        //! ë¶€ëª¨ ë…¸ë“œì˜ key count ê°±ì‹ 
         node->KeyCount--;
         return node->childs[childIndex];
     }
-    //! childIndex°¡ nodeÀÇ ¸¶Áö¸· ÀÚ½ÄÀÎ °æ¿ì
+    //! childIndexê°€ nodeì˜ ë§ˆì§€ë§‰ ìì‹ì¸ ê²½ìš°
     else
     {
-        // ºÎ¸ğ ³ëµåÀÇ childIndex key¸¦ ¼±Çà ÀÚ½Ä ³ëµåÀÇ Ã³À½À¸·Î ÀÌµ¿
+        // ë¶€ëª¨ ë…¸ë“œì˜ childIndex keyë¥¼ ì„ í–‰ ìì‹ ë…¸ë“œì˜ ì²˜ìŒìœ¼ë¡œ ì´ë™
         node->childs[childIndex - 1]->keys[T - 1] = node->keys[childIndex];
-        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
+        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
         for (int i = 0; i < T - 1; ++i)
         {
             node->childs[childIndex - 1]->keys[i + T] = node->childs[childIndex]->keys[i];
         }
-        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ childµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
+        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ childë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex - 1]->childs[i + T] = node->childs[childIndex]->childs[i];
         }
-        // ºÎ¸ğ ³ëµåÀÇ ¼±Çà ÀÚ½Ä ³ëµåÀÇ keyCount °»½Å
+        // ë¶€ëª¨ ë…¸ë“œì˜ ì„ í–‰ ìì‹ ë…¸ë“œì˜ keyCount ê°±ì‹ 
         node->childs[childIndex - 1]->KeyCount = 2 * T - 1;
-        // ºÎ¸ğ ³ëµåÀÇ key °»½Å ¹× child °»½Å
-        for (int i = childIndex; i < node->KeyCount - 1; ++i)
-        {
-            node->keys[i] = node->keys[i + 1];
-        }
-        for (int i = childIndex; i < node->KeyCount; ++i)
-        {
-            node->childs[i] = node->childs[i + 1];
-        }
-        //! ºÎ¸ğ³ëµåÀÇ key count °»½ÅÇØ¾ßÇÔ.
-        //! ³ëµåÀÇ key count --;
+        // ë¶€ëª¨ ë…¸ë“œì˜ key ê°±ì‹  ë° child ê°±ì‹ 
+        // for (int i = childIndex; i < node->KeyCount - 1; ++i)
+        // {
+        //     node->keys[i] = node->keys[i + 1];
+        // }
+        // for (int i = childIndex; i < node->KeyCount; ++i)
+        // {
+        //     node->childs[i] = node->childs[i + 1];
+        // }
+        //! ë¶€ëª¨ë…¸ë“œì˜ key count ê°±ì‹ í•´ì•¼í•¨.
+        //! ë…¸ë“œì˜ key count --;
         node->KeyCount--;
         return node->childs[childIndex - 1];
     }
 }
 
-// Tree¸¦ Ãâ·ÂÇÑ´Ù.
+// Treeë¥¼ ì¶œë ¥í•œë‹¤.
 void Print_Tree(BTREENODE *node, int level)
 {
-    // leaf°¡ node°¡ ¾Æ´Ï¸é DFS ½ÇÇàÇÔ
+    // leafê°€ nodeê°€ ì•„ë‹ˆë©´ DFS ì‹¤í–‰í•¨
     if (!node->leaf)
     {
         for (int i = 0; i <= node->KeyCount; i++)
