@@ -15,7 +15,13 @@ typedef struct BtreeNode
     bool leaf;                   // leaf인지 판정
     int keys[2 * T - 1];         // node가 가지고 있는 key 값들
     struct BtreeNode *childs[M]; // 현재 노드와 연결되어있는 child의 배열이다.
+    int *dataPointer;
+    struct BtreeNode *nextNode;
 } BTREENODE;
+
+typedef struct LeafHead {
+    struct BtreeNode *root;
+}LEAFHEAD;
 
 // tree 구조체 선언
 typedef struct Btree
