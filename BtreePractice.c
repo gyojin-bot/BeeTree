@@ -14,15 +14,8 @@ typedef struct BtreeNode
     int KeyCount;                // key의 갯수
     bool leaf;                   // leaf인지 판정
     int keys[2 * T - 1];         // node가 가지고 있는 key 값들
-    struct BtreeNode *childs[M]; // 현재 노드와 연결되어있는 child의 배열이다.
-    int *dataPointer;
-    struct BtreeNode *nextNode;
+    struct BtreeNode *childs[2*T]; // 현재 노드와 연결되어있는 child의 배열이다.
 } BTREENODE;
-
-typedef struct LeafHead {
-    struct BtreeNode *root;
-}LEAFHEAD;
-
 // tree 구조체 선언
 typedef struct Btree
 {
@@ -65,31 +58,21 @@ int main()
     Insert(&tree, 40);
     Insert(&tree, 50);
     Insert(&tree, 60);
-    Insert(&tree, 70);
-    Insert(&tree, 80);
-    Insert(&tree, 90);
-    Insert(&tree, 100);
-    Print_Tree(tree.root, 0);
-    Deletion(&tree, 40);
+
     Print_Tree(tree.root, 0);
     Deletion(&tree, 20);
     Print_Tree(tree.root, 0);
-    Deletion(&tree, 100);
-    Print_Tree(tree.root, 0);
-    Deletion(&tree, 70);
-    Print_Tree(tree.root, 0);
-    Deletion(&tree, 80);
+    Deletion(&tree, 10);
     Print_Tree(tree.root, 0);
     Deletion(&tree, 30);
     Print_Tree(tree.root, 0);
-    Deletion(&tree, 10);
+    Deletion(&tree, 40);
     Print_Tree(tree.root, 0);
     Deletion(&tree, 50);
     Print_Tree(tree.root, 0);
     Deletion(&tree, 60);
     Print_Tree(tree.root, 0);
-    Deletion(&tree, 90);
-    Print_Tree(tree.root, 0);
+
     printf("END");
     return 0;
 }
@@ -310,12 +293,25 @@ void SearchForDel(BTREE *tree, BTREENODE *node, int keyValue)
                 node->keys[index] = keyPrime;
                 Arrange_for_Delete(tree, tree->root->childs[childIndex], keyValue);
             }
-            else
+            else if(node->childs[childIndex+1]->KeyCount >= T)
             {
                 keyPrime = Find_KeyPrime_succecor(node->childs[childIndex + 1], keyValue);
                 node->keys[index] = keyPrime;
                 Arrange_for_Delete(tree, tree->root->childs[childIndex + 1], keyValue);
             }
+
+            // 자식 양쪽 다 t-1일 경우
+            else
+            {
+                BTREENODE *child_node = Merge_Nodes(node, childIndex);
+                if (node->KeyCount == 0)
+                {
+                    tree->root = node->childs[0];
+                    free(node);
+                }
+                Arrange_for_Delete(tree, child_node, keyValue);
+            }
+            
         }
         // return;
     }
@@ -376,6 +372,8 @@ void Arrange_for_Delete(BTREE *tree, BTREENODE *node, int keyValue)
         return;
     }
 
+
+ 
     if (node->childs[childIndex]->KeyCount < T)
     {
 
@@ -396,6 +394,8 @@ void Arrange_for_Delete(BTREE *tree, BTREENODE *node, int keyValue)
                 Shift_to_Left(node, childIndex);
                 Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
+
+            // 둘 다 키가 충분하지 않을 경우 
             else
             {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
@@ -441,6 +441,8 @@ void Arrange_for_Delete(BTREE *tree, BTREENODE *node, int keyValue)
                 Shift_to_Right(node, childIndex);
                 Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
+
+            
             else
             {
                 BTREENODE *child_node = Merge_Nodes(node, childIndex);
@@ -626,6 +628,9 @@ BTREENODE *Merge_Nodes(BTREENODE *node, int childIndex)
 // Tree를 출력한다.
 void Print_Tree(BTREENODE *node, int level)
 {
+    if(node->KeyCount == 0) {
+        printf("\n[EMPTY]\n");
+    }
     // leaf가 node가 아니면 DFS 실행함
     if (!node->leaf)
     {
