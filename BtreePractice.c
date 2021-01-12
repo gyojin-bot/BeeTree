@@ -16,7 +16,6 @@ typedef struct BtreeNode
     int keys[2 * T - 1];         // node가 가지고 있는 key 값들
     struct BtreeNode *childs[2*T]; // 현재 노드와 연결되어있는 child의 배열이다.
 } BTREENODE;
-
 // tree 구조체 선언
 typedef struct Btree
 {

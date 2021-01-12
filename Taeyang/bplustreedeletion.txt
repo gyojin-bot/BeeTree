@@ -1,0 +1,27 @@
+
+1) Start at the root and go up to leaf node containing the key K
+2) Find the node n on the path from the root to the leaf node containing K
+    A. If n is root, remove K
+         a. if root has mode than one keys, done
+         b. if root has only K
+            i) if any of its child node can lend a node
+               Borrow key from the child and adjust child links
+            ii) Otherwise merge the children nodes it will be new root
+    B. If n is a internal node, remove K
+        i) If n has at lease ceil(m/2) keys, done!
+        ii) If n has less than ceil(m/2) keys,
+            If a sibling can lend a key,
+            Borrow key from the sibling and adjust keys in n and the parent node
+                Adjust child links
+            Else
+                Merge n with its sibling
+                Adjust child links
+    C. If n is a leaf node, remove K
+        i) If n has at least ceil(M/2) elements, done!
+            In case the smallest key is deleted, push up the next key
+        ii) If n has less than ceil(m/2) elements
+        If the sibling can lend a key
+            Borrow key from a sibling and adjust keys in n and its parent node
+        Else
+            Merge n and its sibling
+            Adjust keys in the parent node
