@@ -35,6 +35,7 @@ void Insert_nonfull(BNODE *, int);
 void Insert(BPLUSTREE *, int);
 BNODE *Find_Leaf(BNODE *, int);
 void Print_Tree(BNODE *, int);
+void Heap_Counting(char);
 int Get_Rand_Int();
 void Insert_Of_N(BPLUSTREE *, int);
 void Deletion(BPLUSTREE *, int);
@@ -53,15 +54,24 @@ int Find_KeyPrime_Presuccecor(BNODE *, int );
 int Find_KeyPrime_succecor(BNODE *, int );
 int Find_Value(BNODE *node, int keyValue);
 //! --------------------------------------------------//
-
+//! ------------------ GLOBAL var --------------------//
+unsigned int HEAPCOUNT = 0;
+//! --------------------------------------------------//
 //! ------------------- MAIN 함수 --------------------//
 int main()
 {
     srand((unsigned int)time(NULL));
     BPLUSTREE tree;
     Tree_Create(&tree);
-    Insert_Of_N(&tree, 10);
-
+    //Insert_Of_N(&tree, 10);
+    Insert(&tree, 10);
+    Insert(&tree, 20);
+    Insert(&tree, 30);
+    Insert(&tree, 40);
+    Insert(&tree, 50);
+    Insert(&tree, 60);
+    Insert(&tree, 80);
+    Insert(&tree, 90);
     Print_Tree(tree.root, 0);
     Deletion(&tree, 20);
     Print_Tree(tree.root, 0);
@@ -77,6 +87,7 @@ int main()
     Print_Tree(tree.root, 0);
 
     printf("END");
+    Heap_Counting('*');
     return 0;
 }
 
@@ -87,12 +98,24 @@ BNODE *Allocate()
     // BNODE 크기만큼 할당한다. (malloc은 메모리를 할당하고, 할당한 주소값을 반환한다.)
     BNODE *new_node = (BNODE *)malloc(sizeof(BNODE));
     // BNODE 형태의 new_node 선언 = BNODE 의 형태의 반환된 malloc의 주소값
-
+    Heap_Counting('+');
     new_node->prevNode = NULL;
     new_node->nextNode = NULL;
 
     // new_node(BNODE)를 반환
     return new_node;
+}
+
+void Heap_Counting(char operand) {
+    if(operand == '+') {
+        HEAPCOUNT ++;
+        printf("HEAPCOUNT++\n");
+    }
+    else if(operand == '-') {
+        HEAPCOUNT --;
+        printf("HEAPCOUNT--\n");
+    }
+    printf("\nAssigned %d struct onto Heap.\n", HEAPCOUNT);
 }
 
 //! 트리 생성 함수
@@ -275,14 +298,12 @@ void Print_Tree(BNODE *node, int level)
         }
         printf("\n");
     }
-
     return;
 }
 
 //////////삭제////////////////////
 void Insert_Of_N(BPLUSTREE *tree, int n)
 {
-    printf("Inserted randNum :: ");
     for (int index = 0; index < n; ++index)
     {
         int item = Get_Rand_Int() % 101;
@@ -390,6 +411,7 @@ void SearchForDel(BPLUSTREE *tree, BNODE *node, int keyValue)
                 {
                     tree->root = node->childs[0];
                     free(node);
+                    Heap_Counting('-');
                 }
                 Arrange_for_Delete(tree, child_node, keyValue);
             }
@@ -464,6 +486,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
                 {
                     tree->root = node->childs[0];
                     free(node);
+                    Heap_Counting('-');
                 }
                 Arrange_for_Delete(tree, child_node, keyValue);
             }
@@ -487,6 +510,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
                 {
                     tree->root = node->childs[0];
                     free(node);
+                    Heap_Counting('-');
                 }
                 Arrange_for_Delete(tree, child_node, keyValue);
             }
@@ -510,6 +534,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
                 {
                     tree->root = node->childs[0];
                     free(node);
+                    Heap_Counting('-');
                 }
                 Arrange_for_Delete(tree, child_node, keyValue);
             }
@@ -564,7 +589,8 @@ void Leaf_Node_Pop(BNODE *node)
     }
 
     free(node);
-    printf("도비는 자유에요! \n");
+    Heap_Counting('-');
+    //printf("도비는 자유에요! \n");
 }
 
 
