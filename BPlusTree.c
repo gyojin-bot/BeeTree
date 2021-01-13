@@ -283,7 +283,6 @@ void Print_Tree(BNODE *node, int level)
                 printf("[%d]", node->keys[i]);
             }
             printf("\n");
-            // Print_Tree(node->childs[i + 1], level + 1);
         }
     }
     else
@@ -440,16 +439,25 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
 
     if (node->childs[childIndex]->leaf)
     {
+        //!여기에요
         Final_Delete(node->childs[childIndex], keyValue);
         if (childIndex == 0)
         {
             childIndex = 1;
-        }
-        for (int i = childIndex-1; i < node->KeyCount - 1; ++i)
-        {
+            for (int i = childIndex-1; i < node->KeyCount - 1; ++i)
+            {
             node->keys[i] = node->keys[i + 1];
+            }
         }
-        for (int i = childIndex-1; i < node->KeyCount; ++i)
+        else
+        {
+            for (int i = childIndex-1; i < node->KeyCount - 1; ++i)
+            {
+                node->keys[i] = node->keys[i + 1];
+            }   
+        }
+        
+        for (int i = childIndex; i < node->KeyCount; ++i)
         {
             node->childs[i] = node->childs[i + 1];
         }
