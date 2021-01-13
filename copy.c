@@ -4,31 +4,31 @@
 #include <string.h>
 #include <time.h>
 
-// �ִ� �ڽĳ�� ����
+// 최대 자식노드 개수
 #define T 2
 
-//! Node ����ü ����
+//! Node 구조체 선언
 typedef struct BNode
 {
-    int KeyCount;                // key�� ����
-    bool leaf;                   // leaf���� ����
-    bool root;                   // root���� ����
-    int keys[2 * T - 1];         // node�� ������ �ִ� key ����
-    struct BNode *childs[2 * T]; // ���� ���� ����Ǿ��ִ� child�� �迭�̴�.
+    int KeyCount;                // key의 갯수
+    bool leaf;                   // leaf인지 판정
+    bool root;                   // root인지 판정
+    int keys[2 * T - 1];         // node가 가지고 있는 key 값들
+    struct BNode *childs[2 * T]; // 현재 노드와 연결되어있는 child의 배열이다.
 
-    struct BNode *parents;  // �θ��� ������
-    struct BNode *prevNode; // leaf ������ ������
-    struct BNode *nextNode; // leaf ������ ������
+    struct BNode *parents;  // 부모노드 포인터
+    struct BNode *prevNode; // leaf 연결노드 포인터
+    struct BNode *nextNode; // leaf 연결노드 포인터
 } BNODE;
 
 
-//! tree ����ü ����
+//! tree 구조체 선언
 typedef struct BPlusTree
 {
     struct BNode *root;
 } BPLUSTREE;
 
-//! ------------------ �Լ� ����� --------------------//
+//! ------------------ 함수 선언부 --------------------//
 // MAIN FUNCTION
 BNODE *Allocate();
 void Tree_Create(BPLUSTREE *);
@@ -81,11 +81,10 @@ void Node_Clear(BNODE*);
 
 //! ------------------ GLOBAL var --------------------//
 unsigned int HEAPCOUNT = 0;
-bool visited[101];
 //! --------------------------------------------------//
 
 
-//! ------------------- MAIN �Լ� --------------------//
+//! ------------------- MAIN 함수 --------------------//
 int main()
 {
     printf("================================= START ===============================\n\n");
@@ -98,48 +97,10 @@ int main()
     while (inputNumber != 7)
     {   
         system("cls");
-        Print_Tree(tree.root, 0);
-        printf("\n\ncommand - ins, del, sch, prv\nex) [ins 10], [prv 'any Int']\n");
-        scanf("%s %d", command, &keyValue);
-        if (!strcmp(command, "ins"))
-        {
-            Insert(&tree, keyValue);
-            Print_Tree(tree.root, 0);
-            prevTree = tree;
-        }
-        else if (!strcmp(command, "del"))
-        {
-            Deletion(&tree, keyValue);
-            Print_Tree(tree.root, 0);
-            prevTree = tree;
-        }
-        else if (!strcmp(command, "sch"))
-        {
-            if (Search(tree.root, keyValue))
-            {
-                printf("keyValue [%d] exist.\n", keyValue);
-                getchar();
-                getchar();
-            }
-        }
-        else if (!strcmp(command, "prv"))
-        {
-            printf("\n");
-            Print_Tree(prevTree.root, 0);
-            getchar();
-            getchar();
-        }
-        else if (!strcmp(command, "ran"))
-        {
-            printf("\n");
-            Insert_Of_N(&tree, keyValue);
-        }
-        else
-        {
-            printf("wrong command OR something wrong\n");
-            return 0;
-        }
-        printf("\n\n====================================================================\n\n");
+        if(tree.root == NULL) Tree_Create(&tree);
+        Console_Print();
+        int inputNumber = Console_Input();
+        Console_Main(&tree, inputNumber);
     }
 
 
@@ -148,18 +109,18 @@ int main()
     return 0;
 }
 
-//! ���ο� ��� ���� �Լ�
+//! 새로운 노드 생성 함수
 BNODE *Allocate()
 {
 
-    // BNODE ũ�⸸ŭ �Ҵ��Ѵ�. (malloc�� �޸𸮸� �Ҵ��ϰ�, �Ҵ��� �ּҰ��� ��ȯ�Ѵ�.)
+    // BNODE 크기만큼 할당한다. (malloc은 메모리를 할당하고, 할당한 주소값을 반환한다.)
     BNODE *new_node = (BNODE *)malloc(sizeof(BNODE));
-    // BNODE ������ new_node ���� = BNODE �� ������ ��ȯ�� malloc�� �ּҰ�
+    // BNODE 형태의 new_node 선언 = BNODE 의 형태의 반환된 malloc의 주소값
     Heap_Counting('+');
     new_node->prevNode = NULL;
     new_node->nextNode = NULL;
 
-    // new_node(BNODE)�� ��ȯ
+    // new_node(BNODE)를 반환
     return new_node;
 }
 
@@ -176,11 +137,11 @@ void Heap_Counting(char operand)
 }
 
 void Tree_Create(BPLUSTREE *tree)
-{                                 // BPLUSTREE�� root* �� �ּҸ� ���� ����ü�̴�.
-    BNODE *new_node = Allocate(); // �� ��带 ����� ���� �����Ϳ� �ּҸ� �Ҵ��Ѵ�.
-    new_node->KeyCount = 0;       // ���θ���� key�� �ȵ�������Ƿ� keycount�� 0���� �Ѵ�.
-    new_node->leaf = true;        // ���������� leaf�Ӽ��� on�Ѵ�.
-    tree->root = new_node;        // new_node�� ��Ʈ��尡 �ǹǷ� tree�� root�� new_node�� �Ѵ�. (�Ѵ� �������̴�.)
+{                                 // BPLUSTREE는 root* 의 주소를 가진 구조체이다.
+    BNODE *new_node = Allocate(); // 새 노드를 만들기 위해 포인터에 주소를 할당한다.
+    new_node->KeyCount = 0;       // 새로만들면 key가 안들어있으므로 keycount를 0으로 한다.
+    new_node->leaf = true;        // 마찬가지로 leaf속성을 on한다.
+    tree->root = new_node;        // new_node가 루트노드가 되므로 tree의 root는 new_node로 한다. (둘다 포인터이다.)
     tree->root->root = true;
 }
 
@@ -206,21 +167,21 @@ void Insert(BPLUSTREE *tree, int keyValue)
 
 void Split_Child(BNODE *parentNode, int ChildIndex)
 {
-    // right_node�� �и��ϸ鼭 ������� ���ο� node�̱� ������ �޸𸮸� ���� �Ҵ��Ѵ�.
+    // right_node는 분리하면서 만들어질 새로운 node이기 때문에 메모리를 새로 할당한다.
     BNODE *right_node = Allocate();
     BNODE *left_node = parentNode->childs[ChildIndex];
 
-    // right_node�� leaf �Ӽ��� left_node�� leaf�� �޾ƿ´�.
+    // right_node의 leaf 속성은 left_node의 leaf를 받아온다.
     right_node->leaf = left_node->leaf;
 
-    //!---- leaf Node�� �и��ϴ� ��� ----//
+    //!---- leaf Node를 분리하는 경우 ----//
     if (left_node->leaf)
     {
-        // ������ �ڽĿ��� T�� ��ŭ �ű��. (�θ��� Ű�� �����ؾ� �ϹǷ�)
+        // 오른쪽 자식에는 T개 만큼 옮긴다. (부모의 키를 포함해야 하므로)
         right_node->KeyCount = T;
         left_node->KeyCount = T - 1;
 
-        // left_node�� Ű���� right_node�� �̵�
+        // left_node의 키들을 right_node로 이동
         for (int i = 0; i < T; ++i)
         {
             right_node->keys[i] = left_node->keys[T + i - 1];
@@ -231,19 +192,19 @@ void Split_Child(BNODE *parentNode, int ChildIndex)
             parentNode->keys[i] = parentNode->keys[i - 1];
         }
         parentNode->childs[ChildIndex + 1] = right_node;
-        //! B+Ʈ���� �θ� key = ������ �ڽ��� ù��° key �̴�.
+        //! B+트리는 부모 key = 오른쪽 자식의 첫번째 key 이다.
         parentNode->keys[ChildIndex] = right_node->keys[0];
         parentNode->KeyCount++;
     }
 
     else
     {
-        // 2T-1�� �и��ϸ鼭 ��� ���� �θ�� �ø���
-        // ������  2T-2���� key���� left�� right�� ���������.
+        // 2T-1를 분리하면서 가운데 값은 부모로 올리고
+        // 나머지  2T-2개의 key들을 left와 right가 나누어가진다.
         right_node->KeyCount = T - 1;
         left_node->KeyCount = T - 1;
 
-        // left�� Ű�� �ڽ��� right�� �ű��.
+        // left의 키와 자식을 right로 옮긴다.
         for (int i = 0; i < T - 1; ++i)
         {
             right_node->keys[i] = left_node->keys[T + i];
@@ -262,7 +223,7 @@ void Split_Child(BNODE *parentNode, int ChildIndex)
         parentNode->KeyCount++;
     }
 
-    // �θ�, �ڽ� �籸��
+    // 부모, 자식 재구성
     left_node->parents = parentNode;
     right_node->parents = parentNode;
     left_node->nextNode = right_node;
@@ -271,28 +232,28 @@ void Split_Child(BNODE *parentNode, int ChildIndex)
 
 void Insert_nonfull(BNODE *node, int KeyValue)
 {
-    // KeyIndex�� node�� key ������ �Ҵ��Ѵ�.
-    // ��, key[]�� ���� ������ key�� idx�� �Ҵ��Ѵ�.
+    // KeyIndex는 node의 key 갯수를 할당한다.
+    // 즉, key[]의 가장 마지막 key의 idx를 할당한다.
     int KeyIndex = node->KeyCount;
 
-    // ���� node�� leaf node���
+    // 만약 node가 leaf node라면
     if (node->leaf)
     {
 
-        // node�� key ������ 1 �̻��̰� (�� ��尡 �ƴϰ�),
-        // ���� key���� key[idx]���� �۾��������� idx�� ���δ�.
-        // idx�� ���ο� key���� ���� �ڸ��� �ȴ�.
+        // node의 key 갯수가 1 이상이고 (빈 노드가 아니고),
+        // 넣을 key값이 key[idx]보다 작아질때까지 idx를 줄인다.
+        // idx는 새로운 key값을 넣을 자리가 된다.
         while (KeyIndex >= 1 && KeyValue < node->keys[KeyIndex - 1])
         {
-            // ���ο� key���� ���� �ڸ��� �������ش�. (��ĭ�� ���������� �̵��Ѵ�.)
+            // 새로운 key값을 넣을 자리를 마련해준다. (한칸씩 오른쪽으로 이동한다.)
             node->keys[KeyIndex] = node->keys[KeyIndex - 1];
             KeyIndex--;
         }
 
-        // key���� ���� �ڸ��� ã�Ұ�, ������ �ش� �ڸ��� ������� ������
-        // ������ ã�� key[idx]�� ���ο� key���� �Ҵ��Ѵ�.
+        // key값을 넣을 자리를 찾았고, 위에서 해당 자리도 비워놨기 때문에
+        // 위에서 찾은 key[idx]에 새로운 key값을 할당한다.
         node->keys[KeyIndex] = KeyValue;
-        // �׸��� ����� keycount�� 1 �÷��ش�.
+        // 그리고 노드의 keycount를 1 늘려준다.
         node->KeyCount += 1;
     }
     else
@@ -320,7 +281,7 @@ void Print_Tree(BNODE *node, int level)
     {
         printf("\n[EMPTY]\n");
     }
-    // leaf�� node�� �ƴϸ� DFS ������
+    // leaf가 node가 아니면 DFS 실행함
     else
     {
         if (!node->leaf)
@@ -353,19 +314,13 @@ void Print_Tree(BNODE *node, int level)
     }
     return;
 }
-//////////����////////////////////
+//////////삭제////////////////////
 void Insert_Of_N(BPLUSTREE *tree, int n)
 {
     for (int index = 0; index < n; ++index)
     {
         int item = Get_Rand_Int() % 101;
-        if (!visited[item]){
-            visited[item] = true;
-            Insert(tree, item);
-        }
-        else {
-            index--;
-        }
+        Insert(tree, item);
     }
 }
 int Get_Rand_Int()
@@ -509,14 +464,14 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
         //! 0 < childIndex < node->keycount - 1
         if (childIndex > 0 && childIndex < node->KeyCount - 1)
         {
-            // ���� �ڽ��� Ű�� ���� ���
+            // 왼쪽 자식이 키가 많을 경우
             if (node->childs[childIndex - 1]->KeyCount >= T)
             {
                 Swap_Keys_Left(node, childIndex);
                 Shift_to_Right(node, childIndex);
                 Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            // ������ �ڽ��� Ű�� ���� ���
+            // 오른쪽 자식이 키가 많을 경우
             else if (node->childs[childIndex + 1]->KeyCount >= T)
             {
                 Swap_Keys_Right(node, childIndex);
@@ -524,7 +479,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
                 Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
 
-            // �� �� Ű�� ������� ���� ���
+            // 둘 다 키가 충분하지 않을 경우
             else
             {
                 BNODE *child_node = Merge_Nodes(node, childIndex);
@@ -547,7 +502,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
         else if (childIndex == 0)
         {
 
-            // ������ �ڽ��� Ű�� ���� ���
+            // 오른쪽 자식이 키가 많을 경우
             if (node->childs[childIndex + 1]->KeyCount >= T)
             {
                 Swap_Keys_Right(node, childIndex);
@@ -575,7 +530,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
         //! childIndex == node->keycount
         else
         {
-            // ������ �ڽ��� Ű�� ���� ���
+            // 오른쪽 자식이 키가 많을 경우
             if (node->childs[childIndex - 1]->KeyCount >= T)
             {
                 Swap_Keys_Left(node, childIndex);
@@ -659,29 +614,29 @@ void Leaf_Node_Pop(BNODE *node)
 }
 
 BNODE *Merge_Nodes(BNODE *node, int childIndex)
-{ //! ����� ������ ���� �ڽĳ���� Ű�� T-1���� �˰� �ִ�...
+{ //! 여기는 무조건 양쪽 자식노드의 키가 T-1임을 알고 있다...
 
-    //! childIndex�� node�� ������ �ڽ��� �ƴ� ���
+    //! childIndex가 node의 마지막 자식이 아닌 경우
     if (childIndex < node->KeyCount)
     {
         free(node->childs[childIndex + 1]);
         Heap_Counting('-');
-        // �θ� ����� childIndex key�� ���� �ڽ� ����� ������ �̵�
+        // 부모 노드의 childIndex key를 선행 자식 노드의 끝으로 이동
         node->childs[childIndex]->keys[T - 1] = node->keys[childIndex];
-        // �θ� ����� ���� �ڽ� ����� key���� ���� �ڽ� ���� �̵�
+        // 부모 노드의 후행 자식 노드의 key들을 선행 자식 노드로 이동
         for (int i = 0; i < T - 1; ++i)
         {
             node->childs[childIndex]->keys[i + T] = node->childs[childIndex + 1]->keys[i];
         }
-        // �θ� ����� ���� �ڽ� ����� child���� ���� �ڽ� ���� �̵�
-        // childs leaf �� �ƴ� ���� ����,
+        // 부모 노드의 후행 자식 노드의 child들을 선행 자식 노드로 이동
+        // childs leaf 가 아닐 때만 수행,
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex]->childs[i + T] = node->childs[childIndex + 1]->childs[i];
         }
-        // �θ� ����� ���� �ڽ� ����� keyCount ����
+        // 부모 노드의 선행 자식 노드의 keyCount 갱신
         node->childs[childIndex]->KeyCount = 2 * T - 1;
-        // �θ� ����� key ���� �� child ����
+        // 부모 노드의 key 갱신 및 child 갱신
         for (int i = childIndex; i < node->KeyCount - 1; ++i)
         {
             node->keys[i] = node->keys[i + 1];
@@ -690,32 +645,32 @@ BNODE *Merge_Nodes(BNODE *node, int childIndex)
         {
             node->childs[i] = node->childs[i + 1];
         }
-        //! �θ� ����� key count ����
+        //! 부모 노드의 key count 갱신
         node->KeyCount--;
         return node->childs[childIndex];
     }
-    //! childIndex�� node�� ������ �ڽ��� ���
+    //! childIndex가 node의 마지막 자식인 경우
     else
     {
         free(node->childs[childIndex]);
         Heap_Counting('-');
-        // �θ� ����� childIndex key�� ���� �ڽ� ����� ó������ �̵�
+        // 부모 노드의 childIndex key를 선행 자식 노드의 처음으로 이동
         node->childs[childIndex - 1]->keys[T - 1] = node->keys[childIndex];
-        // �θ� ����� ���� �ڽ� ����� key���� ���� �ڽ� ���� �̵�
+        // 부모 노드의 후행 자식 노드의 key들을 선행 자식 노드로 이동
         for (int i = 0; i < T - 1; ++i)
         {
             node->childs[childIndex - 1]->keys[i + T] = node->childs[childIndex]->keys[i];
         }
-        // �θ� ����� ���� �ڽ� ����� child���� ���� �ڽ� ���� �̵�
+        // 부모 노드의 후행 자식 노드의 child들을 선행 자식 노드로 이동
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex - 1]->childs[i + T] = node->childs[childIndex]->childs[i];
         }
-        // �θ� ����� ���� �ڽ� ����� keyCount ����
+        // 부모 노드의 선행 자식 노드의 keyCount 갱신
         node->childs[childIndex - 1]->KeyCount = 2 * T - 1;
 
-        //! �θ����� key count �����ؾ���.
-        //! ����� key count --;
+        //! 부모노드의 key count 갱신해야함.
+        //! 노드의 key count --;
         node->KeyCount--;
         return node->childs[childIndex - 1];
     }
@@ -738,12 +693,12 @@ bool Swap_Keys_Right(BNODE *node, int childIndex)
 void Shift_to_Left(BNODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
-    // ���� �ڽ� ����� ù��° key�� ��ǥ �ڽ� ����� ���������� �̵�
+    // 후행 자식 노드의 첫번째 key를 목표 자식 노드의 마지막으로 이동
     node->childs[childIndex]->keys[target_position] = node->childs[childIndex + 1]->keys[0];
-    // ���� �ڽ� ����� ù��° �����͸� ��ǥ �ڽ� ����� ���������� �̵�
+    // 후행 자식 노드의 첫번째 포인터를 목표 자식 노드의 마지막으로 이동
     node->childs[childIndex]->childs[target_position + 1] = node->childs[childIndex + 1]->childs[0];
 
-    // ���� �ڽ� ����� key���� �������� ��ĭ�� �̵�
+    // 후행 자식 노드의 key들을 왼쪽으로 한칸씩 이동
     int target_position_2 = node->childs[childIndex + 1]->KeyCount;
     int i = 0;
     while (i < target_position_2 - 1)
@@ -751,28 +706,28 @@ void Shift_to_Left(BNODE *node, int childIndex)
         node->childs[childIndex + 1]->keys[i] = node->childs[childIndex + 1]->keys[i + 1];
         ++i;
     }
-    // ���� �ڽ� ����� �ڽĵ��� �������� ��ĭ�� �̵�
+    // 후행 자식 노드의 자식들을 왼쪽으로 한칸씩 이동
     i = 0;
     while (i < target_position_2)
     {
         node->childs[childIndex + 1]->childs[i] = node->childs[childIndex + 1]->childs[i + 1];
         ++i;
     }
-    // keyCount ����
+    // keyCount 조절
     node->childs[childIndex]->KeyCount++;
     node->childs[childIndex + 1]->KeyCount--;
 }
 void Shift_to_Right(BNODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
-    // ���� �ڽ� ����� key���� ���������� ��ĭ�� �̵�
+    // 후행 자식 노드의 key들을 오른쪽으로 한칸씩 이동
     int i = target_position;
     while (i > 0)
     {
         node->childs[childIndex]->keys[i] = node->childs[childIndex]->keys[i - 1];
         --i;
     }
-    // ���� �ڽ� ����� �ڽĵ��� ���������� ��ĭ�� �̵�
+    // 후행 자식 노드의 자식들을 오른쪽으로 한칸씩 이동
     i = target_position + 1;
     while (i > 0)
     {
@@ -780,11 +735,11 @@ void Shift_to_Right(BNODE *node, int childIndex)
         --i;
     }
     int target_position_2 = node->childs[childIndex - 1]->KeyCount;
-    // ���� �ڽ� ����� ������ key�� ��ǥ �ڽ� ����� ù��°�� �̵�
+    // 선행 자식 노드의 마지막 key를 목표 자식 노드의 첫번째로 이동
     node->childs[childIndex]->keys[0] = node->childs[childIndex - 1]->keys[target_position_2 - 1];
-    // ���� �ڽ� ����� ������ �����͸� ��ǥ �ڽ� ����� ù��°�� �̵�
+    // 선행 자식 노드의 마지막 포인터를 목표 자식 노드의 첫번째로 이동
     node->childs[childIndex]->childs[0] = node->childs[childIndex - 1]->childs[target_position_2];
-    // keyCount ����
+    // keyCount 조절
     node->childs[childIndex - 1]->KeyCount--;
     node->childs[childIndex]->KeyCount++;
 }
@@ -911,21 +866,21 @@ void Console_Main(BPLUSTREE *tree, int inputNumber)
 
 void Console_Print()
 {
-    printf("\n������������������������������������������������������������������������������������������������������������������������������");
-    printf("\n��             Welcome to the world of B-Tree!!                ��");
-    printf("\n������������������������������������������������������������������������������������������������������������������������������");
-    printf("\n��                   --- Select a menu ---                     ��");
-    printf("\n��   1. Print                                                  ��");
-    printf("\n��   2. Insert                                                 ��");
-    printf("\n��   3. Delete                                                 ��");
-    printf("\n��   4. Search                                                 ��");
-    printf("\n��   5. Clear                                                  ��");
-    printf("\n��   6. Help                                                   ��");
-    printf("\n��   7. Quit                                                   ��");
-    printf("\n������������������������������������������������������������������������������������������������������������������������������");
-    printf("\n��                                   Designed by TrueSunDragon ��");
-    printf("\n��                       copyright(c) 2021 All rights reserved ��");
-    printf("\n������������������������������������������������������������������������������������������������������������������������������");
+    printf("\n┌─────────────────────────────────────────────────────────────┐");
+    printf("\n│             Welcome to the world of B-Tree!!                │");
+    printf("\n├─────────────────────────────────────────────────────────────┤");
+    printf("\n│                   --- Select a menu ---                     │");
+    printf("\n│   1. Print                                                  │");
+    printf("\n│   2. Insert                                                 │");
+    printf("\n│   3. Delete                                                 │");
+    printf("\n│   4. Search                                                 │");
+    printf("\n│   5. Clear                                                  │");
+    printf("\n│   6. Help                                                   │");
+    printf("\n│   7. Quit                                                   │");
+    printf("\n├─────────────────────────────────────────────────────────────┤");
+    printf("\n│                                   Designed by TrueSunDragon │");
+    printf("\n│                       copyright(c) 2021 All rights reserved │");
+    printf("\n└─────────────────────────────────────────────────────────────┘");
 
 }
 
