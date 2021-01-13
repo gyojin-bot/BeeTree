@@ -4,30 +4,31 @@
 #include <string.h>
 #include <time.h>
 
-// ìµœëŒ€ ìì‹ë…¸ë“œ ê°œìˆ˜
+// ÃÖ´ë ÀÚ½Ä³ëµå °³¼ö
 #define T 2
 
-//! Node êµ¬ì¡°ì²´ ì„ ì–¸
+//! Node ±¸Á¶Ã¼ ¼±¾ğ
 typedef struct BNode
 {
-    int KeyCount;                // keyì˜ ê°¯ìˆ˜
-    bool leaf;                   // leafì¸ì§€ íŒì •
-    bool root;                   // rootì¸ì§€ íŒì •
-    int keys[2 * T - 1];         // nodeê°€ ê°€ì§€ê³  ìˆëŠ” key ê°’ë“¤
-    struct BNode *childs[2 * T]; // í˜„ì¬ ë…¸ë“œì™€ ì—°ê²°ë˜ì–´ìˆëŠ” childì˜ ë°°ì—´ì´ë‹¤.
+    int KeyCount;                // keyÀÇ °¹¼ö
+    bool leaf;                   // leafÀÎÁö ÆÇÁ¤
+    bool root;                   // rootÀÎÁö ÆÇÁ¤
+    int keys[2 * T - 1];         // node°¡ °¡Áö°í ÀÖ´Â key °ªµé
+    struct BNode *childs[2 * T]; // ÇöÀç ³ëµå¿Í ¿¬°áµÇ¾îÀÖ´Â childÀÇ ¹è¿­ÀÌ´Ù.
 
-    struct BNode *parents;  // ë¶€ëª¨ë…¸ë“œ í¬ì¸í„°
-    struct BNode *prevNode; // leaf ì—°ê²°ë…¸ë“œ í¬ì¸í„°
-    struct BNode *nextNode; // leaf ì—°ê²°ë…¸ë“œ í¬ì¸í„°
+    struct BNode *parents;  // ºÎ¸ğ³ëµå Æ÷ÀÎÅÍ
+    struct BNode *prevNode; // leaf ¿¬°á³ëµå Æ÷ÀÎÅÍ
+    struct BNode *nextNode; // leaf ¿¬°á³ëµå Æ÷ÀÎÅÍ
 } BNODE;
 
-//! tree êµ¬ì¡°ì²´ ì„ ì–¸
+
+//! tree ±¸Á¶Ã¼ ¼±¾ğ
 typedef struct BPlusTree
 {
     struct BNode *root;
 } BPLUSTREE;
 
-//! ------------------ í•¨ìˆ˜ ì„ ì–¸ë¶€ --------------------//
+//! ------------------ ÇÔ¼ö ¼±¾ğºÎ --------------------//
 // MAIN FUNCTION
 BNODE *Allocate();
 void Tree_Create(BPLUSTREE *);
@@ -57,81 +58,69 @@ int Get_Rand_Int();
 BNODE *Find_Leaf(BNODE *, int);
 void Leaf_Node_Pop(BNODE *);
 
+
 // Print
 void Print_Tree(BNODE *, int);
 void Heap_Counting(char);
 
+
+// Console
+void Console_Main(BPLUSTREE *, int);
+void Console_Print();
+int Console_Input();
+void Clear_Tree(BPLUSTREE* );
+void Node_Clear(BNODE*);
+
+
+
+
+
+
 //! --------------------------------------------------//
+
 
 //! ------------------ GLOBAL var --------------------//
 unsigned int HEAPCOUNT = 0;
 //! --------------------------------------------------//
 
-//! ------------------- MAIN í•¨ìˆ˜ --------------------//
+
+//! ------------------- MAIN ÇÔ¼ö --------------------//
 int main()
 {
+    printf("================================= START ===============================\n\n");
     srand((unsigned int)time(NULL));
-    BPLUSTREE tree, prevTree;
+    BPLUSTREE tree;
     Tree_Create(&tree);
-    int keyValue;
-    char *command = malloc(4 * sizeof(char));
-    while (true)
-    {
+    
+    int inputNumber;
+    
+    while (inputNumber != 7)
+    {   
         system("cls");
-        Print_Tree(tree.root, 0);
-        printf("\n\ncommand - ins, del, sch, prv\nex) [ins 10], [prv 'any Int']\n");
-        scanf("%s %d", command, &keyValue);
-        if (!strcmp(command, "ins"))
-        {
-            Insert(&tree, keyValue);
-            Print_Tree(tree.root, 0);
-            prevTree = tree;
-        }
-        else if (!strcmp(command, "del"))
-        {
-            Deletion(&tree, keyValue);
-            Print_Tree(tree.root, 0);
-            prevTree = tree;
-        }
-        else if (!strcmp(command, "sch"))
-        {
-            if (Search(tree.root, keyValue))
-            {
-                printf("keyValue [%d] exist.\n", keyValue);
-                getchar();
-                getchar();
-            }
-        }
-        else if (!strcmp(command, "prv"))
-        {
-            printf("\n");
-            Print_Tree(prevTree.root, 0);
-            getchar();
-            getchar();
-        }
-        else
-        {
-            printf("wrong command OR something wrong\n");
-            return 0;
-        }
-        printf("\n\n====================================================================\n\n");
+        if(tree.root == NULL) Tree_Create(&tree);
+        Console_Print();
+        int inputNumber = Console_Input();
+        Console_Main(&tree, inputNumber);
     }
+
+
+    printf("\n\n================================= END ===============================\n\n");
     // Heap_Counting('*');
     return 0;
 }
 
-//! ìƒˆë¡œìš´ ë…¸ë“œ ìƒì„± í•¨ìˆ˜
+//! »õ·Î¿î ³ëµå »ı¼º ÇÔ¼ö
 BNODE *Allocate()
 {
 
-    // BNODE í¬ê¸°ë§Œí¼ í• ë‹¹í•œë‹¤. (mallocì€ ë©”ëª¨ë¦¬ë¥¼ í• ë‹¹í•˜ê³ , í• ë‹¹í•œ ì£¼ì†Œê°’ì„ ë°˜í™˜í•œë‹¤.)
+    // BNODE Å©±â¸¸Å­ ÇÒ´çÇÑ´Ù. (mallocÀº ¸Ş¸ğ¸®¸¦ ÇÒ´çÇÏ°í, ÇÒ´çÇÑ ÁÖ¼Ò°ªÀ» ¹İÈ¯ÇÑ´Ù.)
     BNODE *new_node = (BNODE *)malloc(sizeof(BNODE));
-    // BNODE í˜•íƒœì˜ new_node ì„ ì–¸ = BNODE ì˜ í˜•íƒœì˜ ë°˜í™˜ëœ mallocì˜ ì£¼ì†Œê°’
+    // BNODE ÇüÅÂÀÇ new_node ¼±¾ğ = BNODE ÀÇ ÇüÅÂÀÇ ¹İÈ¯µÈ mallocÀÇ ÁÖ¼Ò°ª
     Heap_Counting('+');
     new_node->prevNode = NULL;
     new_node->nextNode = NULL;
 
-    // new_node(BNODE)ë¥¼ ë°˜í™˜
+    // new_node(BNODE)¸¦ ¹İÈ¯
     return new_node;
 }
 
@@ -140,22 +129,19 @@ void Heap_Counting(char operand)
     if (operand == '+')
     {
         HEAPCOUNT++;
-        printf("HEAPCOUNT++\n");
     }
     else if (operand == '-')
     {
         HEAPCOUNT--;
-        printf("HEAPCOUNT--\n");
     }
-    printf("Assigned %d struct onto Heap.\n\n", HEAPCOUNT);
 }
 
 void Tree_Create(BPLUSTREE *tree)
-{                                 // BPLUSTREEëŠ” root* ì˜ ì£¼ì†Œë¥¼ ê°€ì§„ êµ¬ì¡°ì²´ì´ë‹¤.
-    BNODE *new_node = Allocate(); // ìƒˆ ë…¸ë“œë¥¼ ë§Œë“¤ê¸° ìœ„í•´ í¬ì¸í„°ì— ì£¼ì†Œë¥¼ í• ë‹¹í•œë‹¤.
-    new_node->KeyCount = 0;       // ìƒˆë¡œë§Œë“¤ë©´ keyê°€ ì•ˆë“¤ì–´ìˆìœ¼ë¯€ë¡œ keycountë¥¼ 0ìœ¼ë¡œ í•œë‹¤.
-    new_node->leaf = true;        // ë§ˆì°¬ê°€ì§€ë¡œ leafì†ì„±ì„ oní•œë‹¤.
-    tree->root = new_node;        // new_nodeê°€ ë£¨íŠ¸ë…¸ë“œê°€ ë˜ë¯€ë¡œ treeì˜ rootëŠ” new_nodeë¡œ í•œë‹¤. (ë‘˜ë‹¤ í¬ì¸í„°ì´ë‹¤.)
+{                                 // BPLUSTREE´Â root* ÀÇ ÁÖ¼Ò¸¦ °¡Áø ±¸Á¶Ã¼ÀÌ´Ù.
+    BNODE *new_node = Allocate(); // »õ ³ëµå¸¦ ¸¸µé±â À§ÇØ Æ÷ÀÎÅÍ¿¡ ÁÖ¼Ò¸¦ ÇÒ´çÇÑ´Ù.
+    new_node->KeyCount = 0;       // »õ·Î¸¸µé¸é key°¡ ¾Èµé¾îÀÖÀ¸¹Ç·Î keycount¸¦ 0À¸·Î ÇÑ´Ù.
+    new_node->leaf = true;        // ¸¶Âù°¡Áö·Î leaf¼Ó¼ºÀ» onÇÑ´Ù.
+    tree->root = new_node;        // new_node°¡ ·çÆ®³ëµå°¡ µÇ¹Ç·Î treeÀÇ root´Â new_node·Î ÇÑ´Ù. (µÑ´Ù Æ÷ÀÎÅÍÀÌ´Ù.)
     tree->root->root = true;
 }
 
@@ -176,26 +162,26 @@ void Insert(BPLUSTREE *tree, int keyValue)
     {
         Insert_nonfull(rootNode, keyValue);
     }
-    printf("Insertions [%d] is completed\n", keyValue);
+    
 }
 
 void Split_Child(BNODE *parentNode, int ChildIndex)
 {
-    // right_nodeëŠ” ë¶„ë¦¬í•˜ë©´ì„œ ë§Œë“¤ì–´ì§ˆ ìƒˆë¡œìš´ nodeì´ê¸° ë•Œë¬¸ì— ë©”ëª¨ë¦¬ë¥¼ ìƒˆë¡œ í• ë‹¹í•œë‹¤.
+    // right_node´Â ºĞ¸®ÇÏ¸é¼­ ¸¸µé¾îÁú »õ·Î¿î nodeÀÌ±â ¶§¹®¿¡ ¸Ş¸ğ¸®¸¦ »õ·Î ÇÒ´çÇÑ´Ù.
     BNODE *right_node = Allocate();
     BNODE *left_node = parentNode->childs[ChildIndex];
 
-    // right_nodeì˜ leaf ì†ì„±ì€ left_nodeì˜ leafë¥¼ ë°›ì•„ì˜¨ë‹¤.
+    // right_nodeÀÇ leaf ¼Ó¼ºÀº left_nodeÀÇ leaf¸¦ ¹Ş¾Æ¿Â´Ù.
     right_node->leaf = left_node->leaf;
 
-    //!---- leaf Nodeë¥¼ ë¶„ë¦¬í•˜ëŠ” ê²½ìš° ----//
+    //!---- leaf Node¸¦ ºĞ¸®ÇÏ´Â °æ¿ì ----//
     if (left_node->leaf)
     {
-        // ì˜¤ë¥¸ìª½ ìì‹ì—ëŠ” Tê°œ ë§Œí¼ ì˜®ê¸´ë‹¤. (ë¶€ëª¨ì˜ í‚¤ë¥¼ í¬í•¨í•´ì•¼ í•˜ë¯€ë¡œ)
+        // ¿À¸¥ÂÊ ÀÚ½Ä¿¡´Â T°³ ¸¸Å­ ¿Å±ä´Ù. (ºÎ¸ğÀÇ Å°¸¦ Æ÷ÇÔÇØ¾ß ÇÏ¹Ç·Î)
         right_node->KeyCount = T;
         left_node->KeyCount = T - 1;
 
-        // left_nodeì˜ í‚¤ë“¤ì„ right_nodeë¡œ ì´ë™
+        // left_nodeÀÇ Å°µéÀ» right_node·Î ÀÌµ¿
         for (int i = 0; i < T; ++i)
         {
             right_node->keys[i] = left_node->keys[T + i - 1];
@@ -206,19 +192,19 @@ void Split_Child(BNODE *parentNode, int ChildIndex)
             parentNode->keys[i] = parentNode->keys[i - 1];
         }
         parentNode->childs[ChildIndex + 1] = right_node;
-        //! B+íŠ¸ë¦¬ëŠ” ë¶€ëª¨ key = ì˜¤ë¥¸ìª½ ìì‹ì˜ ì²«ë²ˆì§¸ key ì´ë‹¤.
+        //! B+Æ®¸®´Â ºÎ¸ğ key = ¿À¸¥ÂÊ ÀÚ½ÄÀÇ Ã¹¹øÂ° key ÀÌ´Ù.
         parentNode->keys[ChildIndex] = right_node->keys[0];
         parentNode->KeyCount++;
     }
 
     else
     {
-        // 2T-1ë¥¼ ë¶„ë¦¬í•˜ë©´ì„œ ê°€ìš´ë° ê°’ì€ ë¶€ëª¨ë¡œ ì˜¬ë¦¬ê³ 
-        // ë‚˜ë¨¸ì§€  2T-2ê°œì˜ keyë“¤ì„ leftì™€ rightê°€ ë‚˜ëˆ„ì–´ê°€ì§„ë‹¤.
+        // 2T-1¸¦ ºĞ¸®ÇÏ¸é¼­ °¡¿îµ¥ °ªÀº ºÎ¸ğ·Î ¿Ã¸®°í
+        // ³ª¸ÓÁö  2T-2°³ÀÇ keyµéÀ» left¿Í right°¡ ³ª´©¾î°¡Áø´Ù.
         right_node->KeyCount = T - 1;
         left_node->KeyCount = T - 1;
 
-        // leftì˜ í‚¤ì™€ ìì‹ì„ rightë¡œ ì˜®ê¸´ë‹¤.
+        // leftÀÇ Å°¿Í ÀÚ½ÄÀ» right·Î ¿Å±ä´Ù.
         for (int i = 0; i < T - 1; ++i)
         {
             right_node->keys[i] = left_node->keys[T + i];
@@ -237,7 +223,7 @@ void Split_Child(BNODE *parentNode, int ChildIndex)
         parentNode->KeyCount++;
     }
 
-    // ë¶€ëª¨, ìì‹ ì¬êµ¬ì„±
+    // ºÎ¸ğ, ÀÚ½Ä Àç±¸¼º
     left_node->parents = parentNode;
     right_node->parents = parentNode;
     left_node->nextNode = right_node;
@@ -246,28 +232,28 @@ void Split_Child(BNODE *parentNode, int ChildIndex)
 
 void Insert_nonfull(BNODE *node, int KeyValue)
 {
-    // KeyIndexëŠ” nodeì˜ key ê°¯ìˆ˜ë¥¼ í• ë‹¹í•œë‹¤.
-    // ì¦‰, key[]ì˜ ê°€ì¥ ë§ˆì§€ë§‰ keyì˜ idxë¥¼ í• ë‹¹í•œë‹¤.
+    // KeyIndex´Â nodeÀÇ key °¹¼ö¸¦ ÇÒ´çÇÑ´Ù.
+    // Áï, key[]ÀÇ °¡Àå ¸¶Áö¸· keyÀÇ idx¸¦ ÇÒ´çÇÑ´Ù.
     int KeyIndex = node->KeyCount;
 
-    // ë§Œì•½ nodeê°€ leaf nodeë¼ë©´
+    // ¸¸¾à node°¡ leaf node¶ó¸é
     if (node->leaf)
     {
 
-        // nodeì˜ key ê°¯ìˆ˜ê°€ 1 ì´ìƒì´ê³  (ë¹ˆ ë…¸ë“œê°€ ì•„ë‹ˆê³ ),
-        // ë„£ì„ keyê°’ì´ key[idx]ë³´ë‹¤ ì‘ì•„ì§ˆë•Œê¹Œì§€ idxë¥¼ ì¤„ì¸ë‹¤.
-        // idxëŠ” ìƒˆë¡œìš´ keyê°’ì„ ë„£ì„ ìë¦¬ê°€ ëœë‹¤.
+        // nodeÀÇ key °¹¼ö°¡ 1 ÀÌ»óÀÌ°í (ºó ³ëµå°¡ ¾Æ´Ï°í),
+        // ³ÖÀ» key°ªÀÌ key[idx]º¸´Ù ÀÛ¾ÆÁú¶§±îÁö idx¸¦ ÁÙÀÎ´Ù.
+        // idx´Â »õ·Î¿î key°ªÀ» ³ÖÀ» ÀÚ¸®°¡ µÈ´Ù.
         while (KeyIndex >= 1 && KeyValue < node->keys[KeyIndex - 1])
         {
-            // ìƒˆë¡œìš´ keyê°’ì„ ë„£ì„ ìë¦¬ë¥¼ ë§ˆë ¨í•´ì¤€ë‹¤. (í•œì¹¸ì”© ì˜¤ë¥¸ìª½ìœ¼ë¡œ ì´ë™í•œë‹¤.)
+            // »õ·Î¿î key°ªÀ» ³ÖÀ» ÀÚ¸®¸¦ ¸¶·ÃÇØÁØ´Ù. (ÇÑÄ­¾¿ ¿À¸¥ÂÊÀ¸·Î ÀÌµ¿ÇÑ´Ù.)
             node->keys[KeyIndex] = node->keys[KeyIndex - 1];
             KeyIndex--;
         }
 
-        // keyê°’ì„ ë„£ì„ ìë¦¬ë¥¼ ì°¾ì•˜ê³ , ìœ„ì—ì„œ í•´ë‹¹ ìë¦¬ë„ ë¹„ì›Œë†¨ê¸° ë•Œë¬¸ì—
-        // ìœ„ì—ì„œ ì°¾ì€ key[idx]ì— ìƒˆë¡œìš´ keyê°’ì„ í• ë‹¹í•œë‹¤.
+        // key°ªÀ» ³ÖÀ» ÀÚ¸®¸¦ Ã£¾Ò°í, À§¿¡¼­ ÇØ´ç ÀÚ¸®µµ ºñ¿ö³ù±â ¶§¹®¿¡
+        // À§¿¡¼­ Ã£Àº key[idx]¿¡ »õ·Î¿î key°ªÀ» ÇÒ´çÇÑ´Ù.
         node->keys[KeyIndex] = KeyValue;
-        // ê·¸ë¦¬ê³  ë…¸ë“œì˜ keycountë¥¼ 1 ëŠ˜ë ¤ì¤€ë‹¤.
+        // ±×¸®°í ³ëµåÀÇ keycount¸¦ 1 ´Ã·ÁÁØ´Ù.
         node->KeyCount += 1;
     }
     else
@@ -295,9 +281,10 @@ void Print_Tree(BNODE *node, int level)
     {
         printf("\n[EMPTY]\n");
     }
-    // leafê°€ nodeê°€ ì•„ë‹ˆë©´ DFS ì‹¤í–‰í•¨
-    if (!node->leaf)
+    // leaf°¡ node°¡ ¾Æ´Ï¸é DFS ½ÇÇàÇÔ
+    else
     {
+        if (!node->leaf)
         for (int i = 0; i <= node->KeyCount; i++)
         {
             Print_Tree(node->childs[i], level + 1);
@@ -312,22 +299,22 @@ void Print_Tree(BNODE *node, int level)
             }
             printf("\n");
         }
-    }
-    else
-    {
-        for (int i = 0; i < level; i++)
+        else
         {
-            printf("--------------------|");
+            for (int i = 0; i < level; i++)
+            {
+                printf("--------------------|");
+            }
+            for (int i = 0; i < node->KeyCount; i++)
+            {
+                printf("[%d]", node->keys[i]);
+            }
+            printf("\n");
         }
-        for (int i = 0; i < node->KeyCount; i++)
-        {
-            printf("[%d]", node->keys[i]);
-        }
-        printf("\n");
     }
     return;
 }
-//////////ì‚­ì œ////////////////////
+//////////»èÁ¦////////////////////
 void Insert_Of_N(BPLUSTREE *tree, int n)
 {
     for (int index = 0; index < n; ++index)
@@ -345,7 +332,6 @@ void Deletion(BPLUSTREE *tree, int keyValue)
 {
     if (!Search(tree->root, keyValue))
     {
-        printf("The keyvalue[%d] is not in the tree\n", keyValue);
     }
     else
     {
@@ -376,55 +362,41 @@ bool Search(BNODE *node, int keyValue)
 
 void SearchForDel(BPLUSTREE *tree, BNODE *node, int keyValue)
 {
-    if (node->leaf)
+    if ( node->leaf )
     {
-        Final_Delete(node, keyValue);
+        Final_Delete(node,keyValue);
+    }
+    else if ( node->childs[0]->leaf)
+    {
+        int childIndex = Find_ChildIndex(node,keyValue);
+        Final_Delete(node->childs[childIndex],keyValue);
+        if (childIndex == 0)
+        {
+            for (int i = childIndex; i < node->KeyCount - 1; ++i)
+            {
+                node->keys[i] = node->keys[i + 1];
+            }
+        }
+        else
+        {
+            for (int i = childIndex - 1; i < node->KeyCount - 1; ++i)
+            {
+                node->keys[i] = node->keys[i + 1];
+            }
+        }
+
+        for (int i = childIndex; i < node->KeyCount; ++i)
+        {
+            node->childs[i] = node->childs[i + 1];
+        }
+        node->KeyCount--;
+
         if (node->KeyCount == 0)
         {
             tree->root = node->childs[0];
             free(node);
             printf("root is changed \n");
             Heap_Counting('-');
-        }
-    }
-    else if (node->childs[0]->leaf)
-    {
-        int childIndex = Find_ChildIndex(node, keyValue);
-        if (node->childs[childIndex]->KeyCount >= T)
-        {
-            Final_Delete(node->childs[childIndex], keyValue);
-        }
-        else
-        {
-            Final_Delete(node->childs[childIndex], keyValue);
-            if (childIndex == 0)
-            {
-                for (int i = childIndex; i < node->KeyCount - 1; ++i)
-                {
-                    node->keys[i] = node->keys[i + 1];
-                }
-            }
-            else
-            {
-                for (int i = childIndex - 1; i < node->KeyCount - 1; ++i)
-                {
-                    node->keys[i] = node->keys[i + 1];
-                }
-            }
-
-            for (int i = childIndex; i < node->KeyCount; ++i)
-            {
-                node->childs[i] = node->childs[i + 1];
-            }
-            node->KeyCount--;
-
-            if (node->KeyCount == 0)
-            {
-                tree->root = node->childs[0];
-                free(node);
-                printf("root is changed \n");
-                Heap_Counting('-');
-            }
         }
     }
     else
@@ -492,14 +464,14 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
         //! 0 < childIndex < node->keycount - 1
         if (childIndex > 0 && childIndex < node->KeyCount - 1)
         {
-            // ì™¼ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            // ¿ŞÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
             if (node->childs[childIndex - 1]->KeyCount >= T)
             {
                 Swap_Keys_Left(node, childIndex);
                 Shift_to_Right(node, childIndex);
                 Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
-            // ì˜¤ë¥¸ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            // ¿À¸¥ÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
             else if (node->childs[childIndex + 1]->KeyCount >= T)
             {
                 Swap_Keys_Right(node, childIndex);
@@ -507,7 +479,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
                 Arrange_for_Delete(tree, node->childs[childIndex], keyValue);
             }
 
-            // ë‘˜ ë‹¤ í‚¤ê°€ ì¶©ë¶„í•˜ì§€ ì•Šì„ ê²½ìš°
+            // µÑ ´Ù Å°°¡ ÃæºĞÇÏÁö ¾ÊÀ» °æ¿ì
             else
             {
                 BNODE *child_node = Merge_Nodes(node, childIndex);
@@ -530,7 +502,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
         else if (childIndex == 0)
         {
 
-            // ì˜¤ë¥¸ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            // ¿À¸¥ÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
             if (node->childs[childIndex + 1]->KeyCount >= T)
             {
                 Swap_Keys_Right(node, childIndex);
@@ -558,7 +530,7 @@ void Arrange_for_Delete(BPLUSTREE *tree, BNODE *node, int keyValue)
         //! childIndex == node->keycount
         else
         {
-            // ì˜¤ë¥¸ìª½ ìì‹ì´ í‚¤ê°€ ë§ì„ ê²½ìš°
+            // ¿À¸¥ÂÊ ÀÚ½ÄÀÌ Å°°¡ ¸¹À» °æ¿ì
             if (node->childs[childIndex - 1]->KeyCount >= T)
             {
                 Swap_Keys_Left(node, childIndex);
@@ -613,7 +585,6 @@ void Final_Delete(BNODE *node, int keyValue)
     {
         Leaf_Node_Pop(node);
     }
-    printf("Delete [%d] is completed. :P\n", keyValue);
 
     return;
 }
@@ -631,38 +602,41 @@ void Leaf_Node_Pop(BNODE *node)
         BNODE *pointPrev = node->prevNode;
         node->nextNode->prevNode = pointPrev;
     }
-
-    free(node);
-    printf("leaf is poped\n");
-    Heap_Counting('-');
-    //printf("ë„ë¹„ëŠ” ììœ ì—ìš”! \n");
+    if (!node->root)
+    {
+        free(node);
+        Heap_Counting('-');
+    }
+    else
+    {
+        return;
+    }    
 }
 
 BNODE *Merge_Nodes(BNODE *node, int childIndex)
-{ //! ì—¬ê¸°ëŠ” ë¬´ì¡°ê±´ ì–‘ìª½ ìì‹ë…¸ë“œì˜ í‚¤ê°€ T-1ì„ì„ ì•Œê³  ìˆë‹¤...
+{ //! ¿©±â´Â ¹«Á¶°Ç ¾çÂÊ ÀÚ½Ä³ëµåÀÇ Å°°¡ T-1ÀÓÀ» ¾Ë°í ÀÖ´Ù...
 
-    //! childIndexê°€ nodeì˜ ë§ˆì§€ë§‰ ìì‹ì´ ì•„ë‹Œ ê²½ìš°
+    //! childIndex°¡ nodeÀÇ ¸¶Áö¸· ÀÚ½ÄÀÌ ¾Æ´Ñ °æ¿ì
     if (childIndex < node->KeyCount)
     {
         free(node->childs[childIndex + 1]);
-        printf("Internal is poped \n");
         Heap_Counting('-');
-        // ë¶€ëª¨ ë…¸ë“œì˜ childIndex keyë¥¼ ì„ í–‰ ìì‹ ë…¸ë“œì˜ ëìœ¼ë¡œ ì´ë™
+        // ºÎ¸ğ ³ëµåÀÇ childIndex key¸¦ ¼±Çà ÀÚ½Ä ³ëµåÀÇ ³¡À¸·Î ÀÌµ¿
         node->childs[childIndex]->keys[T - 1] = node->keys[childIndex];
-        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
+        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
         for (int i = 0; i < T - 1; ++i)
         {
             node->childs[childIndex]->keys[i + T] = node->childs[childIndex + 1]->keys[i];
         }
-        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ childë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
-        // childs leaf ê°€ ì•„ë‹ ë•Œë§Œ ìˆ˜í–‰,
+        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ childµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
+        // childs leaf °¡ ¾Æ´Ò ¶§¸¸ ¼öÇà,
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex]->childs[i + T] = node->childs[childIndex + 1]->childs[i];
         }
-        // ë¶€ëª¨ ë…¸ë“œì˜ ì„ í–‰ ìì‹ ë…¸ë“œì˜ keyCount ê°±ì‹ 
+        // ºÎ¸ğ ³ëµåÀÇ ¼±Çà ÀÚ½Ä ³ëµåÀÇ keyCount °»½Å
         node->childs[childIndex]->KeyCount = 2 * T - 1;
-        // ë¶€ëª¨ ë…¸ë“œì˜ key ê°±ì‹  ë° child ê°±ì‹ 
+        // ºÎ¸ğ ³ëµåÀÇ key °»½Å ¹× child °»½Å
         for (int i = childIndex; i < node->KeyCount - 1; ++i)
         {
             node->keys[i] = node->keys[i + 1];
@@ -671,33 +645,32 @@ BNODE *Merge_Nodes(BNODE *node, int childIndex)
         {
             node->childs[i] = node->childs[i + 1];
         }
-        //! ë¶€ëª¨ ë…¸ë“œì˜ key count ê°±ì‹ 
+        //! ºÎ¸ğ ³ëµåÀÇ key count °»½Å
         node->KeyCount--;
         return node->childs[childIndex];
     }
-    //! childIndexê°€ nodeì˜ ë§ˆì§€ë§‰ ìì‹ì¸ ê²½ìš°
+    //! childIndex°¡ nodeÀÇ ¸¶Áö¸· ÀÚ½ÄÀÎ °æ¿ì
     else
     {
         free(node->childs[childIndex]);
-        printf("Internal is poped \n");
         Heap_Counting('-');
-        // ë¶€ëª¨ ë…¸ë“œì˜ childIndex keyë¥¼ ì„ í–‰ ìì‹ ë…¸ë“œì˜ ì²˜ìŒìœ¼ë¡œ ì´ë™
+        // ºÎ¸ğ ³ëµåÀÇ childIndex key¸¦ ¼±Çà ÀÚ½Ä ³ëµåÀÇ Ã³À½À¸·Î ÀÌµ¿
         node->childs[childIndex - 1]->keys[T - 1] = node->keys[childIndex];
-        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
+        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
         for (int i = 0; i < T - 1; ++i)
         {
             node->childs[childIndex - 1]->keys[i + T] = node->childs[childIndex]->keys[i];
         }
-        // ë¶€ëª¨ ë…¸ë“œì˜ í›„í–‰ ìì‹ ë…¸ë“œì˜ childë“¤ì„ ì„ í–‰ ìì‹ ë…¸ë“œë¡œ ì´ë™
+        // ºÎ¸ğ ³ëµåÀÇ ÈÄÇà ÀÚ½Ä ³ëµåÀÇ childµéÀ» ¼±Çà ÀÚ½Ä ³ëµå·Î ÀÌµ¿
         for (int i = 0; i < T; ++i)
         {
             node->childs[childIndex - 1]->childs[i + T] = node->childs[childIndex]->childs[i];
         }
-        // ë¶€ëª¨ ë…¸ë“œì˜ ì„ í–‰ ìì‹ ë…¸ë“œì˜ keyCount ê°±ì‹ 
+        // ºÎ¸ğ ³ëµåÀÇ ¼±Çà ÀÚ½Ä ³ëµåÀÇ keyCount °»½Å
         node->childs[childIndex - 1]->KeyCount = 2 * T - 1;
 
-        //! ë¶€ëª¨ë…¸ë“œì˜ key count ê°±ì‹ í•´ì•¼í•¨.
-        //! ë…¸ë“œì˜ key count --;
+        //! ºÎ¸ğ³ëµåÀÇ key count °»½ÅÇØ¾ßÇÔ.
+        //! ³ëµåÀÇ key count --;
         node->KeyCount--;
         return node->childs[childIndex - 1];
     }
@@ -720,12 +693,12 @@ bool Swap_Keys_Right(BNODE *node, int childIndex)
 void Shift_to_Left(BNODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
-    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ keyë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ìœ¼ë¡œ ì´ë™
+    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ° key¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸·À¸·Î ÀÌµ¿
     node->childs[childIndex]->keys[target_position] = node->childs[childIndex + 1]->keys[0];
-    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ í¬ì¸í„°ë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ìœ¼ë¡œ ì´ë™
+    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ° Æ÷ÀÎÅÍ¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸·À¸·Î ÀÌµ¿
     node->childs[childIndex]->childs[target_position + 1] = node->childs[childIndex + 1]->childs[0];
 
-    // í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì™¼ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
+    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¿ŞÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
     int target_position_2 = node->childs[childIndex + 1]->KeyCount;
     int i = 0;
     while (i < target_position_2 - 1)
@@ -733,28 +706,28 @@ void Shift_to_Left(BNODE *node, int childIndex)
         node->childs[childIndex + 1]->keys[i] = node->childs[childIndex + 1]->keys[i + 1];
         ++i;
     }
-    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ìì‹ë“¤ì„ ì™¼ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
+    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ ÀÚ½ÄµéÀ» ¿ŞÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
     i = 0;
     while (i < target_position_2)
     {
         node->childs[childIndex + 1]->childs[i] = node->childs[childIndex + 1]->childs[i + 1];
         ++i;
     }
-    // keyCount ì¡°ì ˆ
+    // keyCount Á¶Àı
     node->childs[childIndex]->KeyCount++;
     node->childs[childIndex + 1]->KeyCount--;
 }
 void Shift_to_Right(BNODE *node, int childIndex)
 {
     int target_position = node->childs[childIndex]->KeyCount;
-    // í›„í–‰ ìì‹ ë…¸ë“œì˜ keyë“¤ì„ ì˜¤ë¥¸ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
+    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ keyµéÀ» ¿À¸¥ÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
     int i = target_position;
     while (i > 0)
     {
         node->childs[childIndex]->keys[i] = node->childs[childIndex]->keys[i - 1];
         --i;
     }
-    // í›„í–‰ ìì‹ ë…¸ë“œì˜ ìì‹ë“¤ì„ ì˜¤ë¥¸ìª½ìœ¼ë¡œ í•œì¹¸ì”© ì´ë™
+    // ÈÄÇà ÀÚ½Ä ³ëµåÀÇ ÀÚ½ÄµéÀ» ¿À¸¥ÂÊÀ¸·Î ÇÑÄ­¾¿ ÀÌµ¿
     i = target_position + 1;
     while (i > 0)
     {
@@ -762,14 +735,15 @@ void Shift_to_Right(BNODE *node, int childIndex)
         --i;
     }
     int target_position_2 = node->childs[childIndex - 1]->KeyCount;
-    // ì„ í–‰ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ keyë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ë¡œ ì´ë™
+    // ¼±Çà ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸· key¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ°·Î ÀÌµ¿
     node->childs[childIndex]->keys[0] = node->childs[childIndex - 1]->keys[target_position_2 - 1];
-    // ì„ í–‰ ìì‹ ë…¸ë“œì˜ ë§ˆì§€ë§‰ í¬ì¸í„°ë¥¼ ëª©í‘œ ìì‹ ë…¸ë“œì˜ ì²«ë²ˆì§¸ë¡œ ì´ë™
+    // ¼±Çà ÀÚ½Ä ³ëµåÀÇ ¸¶Áö¸· Æ÷ÀÎÅÍ¸¦ ¸ñÇ¥ ÀÚ½Ä ³ëµåÀÇ Ã¹¹øÂ°·Î ÀÌµ¿
     node->childs[childIndex]->childs[0] = node->childs[childIndex - 1]->childs[target_position_2];
-    // keyCount ì¡°ì ˆ
+    // keyCount Á¶Àı
     node->childs[childIndex - 1]->KeyCount--;
     node->childs[childIndex]->KeyCount++;
 }
+
 
 int Find_Value(BNODE *node, int keyValue)
 {
@@ -781,4 +755,155 @@ int Find_Value(BNODE *node, int keyValue)
         }
     }
     return -1;
+}
+
+
+
+
+
+void Console_Main(BPLUSTREE *tree, int inputNumber)
+{
+    // 0. reprint the menu
+    if (inputNumber == 0)
+    {
+        Console_Print();
+    }
+
+    // 1. Print the Tree
+    else if (inputNumber == 1)
+    {
+
+        Print_Tree(tree->root, 0);
+        getchar();
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 2. Insert a Number
+    else if (inputNumber == 2)
+    {
+        printf("\n input a NUMBER to insert : ");
+        int insertNumber;
+        scanf("%d", &insertNumber);
+        Insert(tree, insertNumber);
+        getchar();
+        printf("\n Inserting [%d] is completed. ", insertNumber);
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 3. Delete a Number
+    else if (inputNumber == 3)
+    {
+        printf("\n input a NUMBER to delete : ");
+        int insertNumber;
+        scanf("%d", &insertNumber);
+        Deletion(tree, insertNumber);
+        getchar();
+        printf("\n Deleting [%d] is completed. ", insertNumber);
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 4. Search a Number
+    else if (inputNumber == 4)
+    {
+        printf("\n input a NUMBER to search : ");
+        int searchNumber;
+        scanf("%d", &searchNumber);
+        getchar();
+        if (Search(tree->root, searchNumber))
+        {
+            printf("\n [%d] is in the tree. ");
+        }
+        else
+        {
+            printf("\n [%d] is NOT in the tree. ");
+        } 
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 5. Clear the Tree
+    else if (inputNumber == 5)
+    {
+        Clear_Tree(tree);
+        getchar();
+        printf("\n Clearing the tree is completed. ");
+        printf("\nPlease insert anykey to continue");
+        getchar();
+        
+    }
+    
+
+    else if (inputNumber == 6)
+    {
+        getchar();
+        printf("\nUnder Construction");
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    else if (inputNumber == 7)
+    {
+        getchar();
+        printf("\nThanks for using our service! See U Next Time! ^^/");
+        printf("\nDesigned by TrueSunDragon");
+        printf("\nPlease insert anykey to continue");
+        getchar();
+        exit(0);
+    }
+
+    else
+    {
+        printf("Input wrong number. Please select a number in menu");
+    }
+
+    return;
+}
+
+    
+
+void Console_Print()
+{
+    printf("\n¦£¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¤");
+    printf("\n¦¢             Welcome to the world of B-Tree!!                ¦¢");
+    printf("\n¦§¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦©");
+    printf("\n¦¢                   --- Select a menu ---                     ¦¢");
+    printf("\n¦¢   1. Print                                                  ¦¢");
+    printf("\n¦¢   2. Insert                                                 ¦¢");
+    printf("\n¦¢   3. Delete                                                 ¦¢");
+    printf("\n¦¢   4. Search                                                 ¦¢");
+    printf("\n¦¢   5. Clear                                                  ¦¢");
+    printf("\n¦¢   6. Help                                                   ¦¢");
+    printf("\n¦¢   7. Quit                                                   ¦¢");
+    printf("\n¦§¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦©");
+    printf("\n¦¢                                   Designed by TrueSunDragon ¦¢");
+    printf("\n¦¢                       copyright(c) 2021 All rights reserved ¦¢");
+    printf("\n¦¦¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¥");
+
+}
+
+int Console_Input()
+{
+    printf("\n Please Select a menu ( 0 : reprint menu) : ");
+    int inputNumber;
+    scanf("%d", &inputNumber);
+    return inputNumber;
+}
+
+
+void Clear_Tree(BPLUSTREE* tree)
+{
+    Node_Clear(tree->root);
+    tree->root = NULL;
+}
+void Node_Clear(BNODE* node) {
+    if(node->leaf) {
+        free(node);
+        return;
+    }
+    for(int i = 0; i<= node->KeyCount; ++i) {
+        Node_Clear(node->childs[i]);
+    }
 }
