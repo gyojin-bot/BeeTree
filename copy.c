@@ -65,6 +65,7 @@ void Heap_Counting(char);
 
 //! ------------------ GLOBAL var --------------------//
 unsigned int HEAPCOUNT = 0;
+bool visited[101];
 //! --------------------------------------------------//
 
 //! ------------------- MAIN 함수 --------------------//
@@ -108,6 +109,11 @@ int main()
             Print_Tree(prevTree.root, 0);
             getchar();
             getchar();
+        }
+        else if (!strcmp(command, "ran"))
+        {
+            printf("\n");
+            Insert_Of_N(&tree, keyValue);
         }
         else
         {
@@ -333,7 +339,13 @@ void Insert_Of_N(BPLUSTREE *tree, int n)
     for (int index = 0; index < n; ++index)
     {
         int item = Get_Rand_Int() % 101;
-        Insert(tree, item);
+        if (!visited[item]){
+            visited[item] = true;
+            Insert(tree, item);
+        }
+        else {
+            index--;
+        }
     }
 }
 int Get_Rand_Int()

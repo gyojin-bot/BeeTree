@@ -1,0 +1,2 @@
+
+    Deletion(&tree, 60);
