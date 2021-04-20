@@ -21,6 +21,7 @@ typedef struct BNode
     struct BNode *nextNode; // leaf 연결노드 포인터
 } BNODE;
 
+
 //! tree 구조체 선언
 typedef struct BPlusTree
 {
@@ -57,65 +58,53 @@ int Get_Rand_Int();
 BNODE *Find_Leaf(BNODE *, int);
 void Leaf_Node_Pop(BNODE *);
 
+
 // Print
 void Print_Tree(BNODE *, int);
 void Heap_Counting(char);
 
+
+// Console
+void Console_Main(BPLUSTREE *, int);
+void Console_Print();
+int Console_Input();
+void Clear_Tree(BPLUSTREE* );
+void Node_Clear(BNODE*);
+
+
+
+
+
+
 //! --------------------------------------------------//
+
 
 //! ------------------ GLOBAL var --------------------//
 unsigned int HEAPCOUNT = 0;
 //! --------------------------------------------------//
 
+
 //! ------------------- MAIN 함수 --------------------//
 int main()
 {
+    printf("================================= START ===============================\n\n");
     srand((unsigned int)time(NULL));
-    BPLUSTREE tree, prevTree;
+    BPLUSTREE tree;
     Tree_Create(&tree);
-    int keyValue;
-    char *command = malloc(4 * sizeof(char));
-    while (true)
-    {
+    
+    int inputNumber;
+    
+    while (inputNumber != 7)
+    {   
         system("cls");
-        Print_Tree(tree.root, 0);
-        printf("\n\ncommand - ins, del, sch, prv\nex) [ins 10], [prv 'any Int']\n");
-        scanf("%s %d", command, &keyValue);
-        if (!strcmp(command, "ins"))
-        {
-            Insert(&tree, keyValue);
-            Print_Tree(tree.root, 0);
-            prevTree = tree;
-        }
-        else if (!strcmp(command, "del"))
-        {
-            Deletion(&tree, keyValue);
-            Print_Tree(tree.root, 0);
-            prevTree = tree;
-        }
-        else if (!strcmp(command, "sch"))
-        {
-            if (Search(tree.root, keyValue))
-            {
-                printf("keyValue [%d] exist.\n", keyValue);
-                getchar();
-                getchar();
-            }
-        }
-        else if (!strcmp(command, "prv"))
-        {
-            printf("\n");
-            Print_Tree(prevTree.root, 0);
-            getchar();
-            getchar();
-        }
-        else
-        {
-            printf("wrong command OR something wrong\n");
-            return 0;
-        }
-        printf("\n\n====================================================================\n\n");
+        if(tree.root == NULL) Tree_Create(&tree);
+        Console_Print();
+        int inputNumber = Console_Input();
+        Console_Main(&tree, inputNumber);
     }
+
+
+    printf("\n\n================================= END ===============================\n\n");
     // Heap_Counting('*');
     return 0;
 }
@@ -140,14 +129,11 @@ void Heap_Counting(char operand)
     if (operand == '+')
     {
         HEAPCOUNT++;
-        printf("HEAPCOUNT++\n");
     }
     else if (operand == '-')
     {
         HEAPCOUNT--;
-        printf("HEAPCOUNT--\n");
     }
-    printf("Assigned %d struct onto Heap.\n\n", HEAPCOUNT);
 }
 
 void Tree_Create(BPLUSTREE *tree)
@@ -176,7 +162,7 @@ void Insert(BPLUSTREE *tree, int keyValue)
     {
         Insert_nonfull(rootNode, keyValue);
     }
-    printf("Insertions [%d] is completed\n", keyValue);
+    
 }
 
 void Split_Child(BNODE *parentNode, int ChildIndex)
@@ -296,8 +282,9 @@ void Print_Tree(BNODE *node, int level)
         printf("\n[EMPTY]\n");
     }
     // leaf가 node가 아니면 DFS 실행함
-    if (!node->leaf)
+    else
     {
+        if (!node->leaf)
         for (int i = 0; i <= node->KeyCount; i++)
         {
             Print_Tree(node->childs[i], level + 1);
@@ -312,18 +299,18 @@ void Print_Tree(BNODE *node, int level)
             }
             printf("\n");
         }
-    }
-    else
-    {
-        for (int i = 0; i < level; i++)
+        else
         {
-            printf("--------------------|");
+            for (int i = 0; i < level; i++)
+            {
+                printf("--------------------|");
+            }
+            for (int i = 0; i < node->KeyCount; i++)
+            {
+                printf("[%d]", node->keys[i]);
+            }
+            printf("\n");
         }
-        for (int i = 0; i < node->KeyCount; i++)
-        {
-            printf("[%d]", node->keys[i]);
-        }
-        printf("\n");
     }
     return;
 }
@@ -345,7 +332,6 @@ void Deletion(BPLUSTREE *tree, int keyValue)
 {
     if (!Search(tree->root, keyValue))
     {
-        printf("The keyvalue[%d] is not in the tree\n", keyValue);
     }
     else
     {
@@ -376,79 +362,46 @@ bool Search(BNODE *node, int keyValue)
 
 void SearchForDel(BPLUSTREE *tree, BNODE *node, int keyValue)
 {
-    // 해당 key가 현재 node에 있는가?
-    int index = Find_Value(node, keyValue);
-    if (index == -1)
+    if ( node->leaf )
     {
-        SearchForDel(tree, node->childs[Find_ChildIndex(node, keyValue)], keyValue);
+        Final_Delete(node,keyValue);
+    }
+    else if ( node->childs[0]->leaf)
+    {
+        int childIndex = Find_ChildIndex(node,keyValue);
+        Final_Delete(node->childs[childIndex],keyValue);
+        if (childIndex == 0)
+        {
+            for (int i = childIndex; i < node->KeyCount - 1; ++i)
+            {
+                node->keys[i] = node->keys[i + 1];
+            }
+        }
+        else
+        {
+            for (int i = childIndex - 1; i < node->KeyCount - 1; ++i)
+            {
+                node->keys[i] = node->keys[i + 1];
+            }
+        }
+
+        for (int i = childIndex; i < node->KeyCount; ++i)
+        {
+            node->childs[i] = node->childs[i + 1];
+        }
+        node->KeyCount--;
+
+        if (node->KeyCount == 0)
+        {
+            tree->root = node->childs[0];
+            free(node);
+            printf("root is changed \n");
+            Heap_Counting('-');
+        }
     }
     else
     {
-        // 있으면 리프인가? 내부인가?
-        if (node->leaf)
-        {
-            // 리프이면서 leaf의 keycount 가 T-1 이상인 경우 바로 삭제한다.
-
-            //! 아래 사항 수정함.
-            if (node->KeyCount > T - 1 || (node == tree->root && node->KeyCount <= T - 1))
-            {
-                //! 필요가 없는~~~~듯/.
-                // int index = Find_ChildIndex(node, keyValue);
-                Final_Delete(node, keyValue);
-            }
-
-            // leaf의 keycount가 T-1보다 적은 경우 삭제가능한 환경을 구축해야해서, DELETION을 만들어야한다.
-
-            else
-            {
-                // 삭제 가능한 환경을 구축해야함.
-                // ArrangeForDel 안에서 Final_Delete를 실행한다.
-                Arrange_for_Delete(tree, tree->root, keyValue);
-            }
-        }
-
-        //! key를 찾았는데, leaf노드가 아니고, 키 개수가 충분하지 않은 경우
-        else if (!node->leaf && node->KeyCount < T)
-        {
-            Arrange_for_Delete(tree, tree->root, keyValue);
-        }
-
-        // else
-        // {
-        //     //! k`을 찾는다.
-        //     int childIndex = Find_ChildIndex(node, keyValue);
-        //     int keyPrime;
-        //     if (node->childs[childIndex]->KeyCount >= T)
-        //     {
-        //         keyPrime = Find_KeyPrime_Presuccecor(node->childs[childIndex], keyValue);
-        //         node->keys[index] = keyPrime;
-        //         Arrange_for_Delete(tree, tree->root->childs[childIndex], keyValue);
-        //     }
-        //     else if (node->childs[childIndex + 1]->KeyCount >= T)
-        //     {
-        //         keyPrime = Find_KeyPrime_succecor(node->childs[childIndex + 1], keyValue);
-        //         node->keys[index] = keyPrime;
-        //         Arrange_for_Delete(tree, tree->root->childs[childIndex + 1], keyValue);
-        //     }
-
-        // 자식 양쪽 다 t-1일 경우
-        else
-        {
-            int childIndex = Find_ChildIndex(node, keyValue);
-            BNODE *child_node = Merge_Nodes(node, childIndex);
-            if (node->KeyCount == 0)
-            {
-                tree->root = node->childs[0];
-                free(node);
-                printf("root is changed\n");
-                Heap_Counting('-');
-                Arrange_for_Delete(tree, tree->root, keyValue);
-            }
-            else
-            {
-                Arrange_for_Delete(tree, child_node, keyValue);
-            }
-        }
+        Arrange_for_Delete(tree, node, keyValue);
     }
 }
 
@@ -632,7 +585,6 @@ void Final_Delete(BNODE *node, int keyValue)
     {
         Leaf_Node_Pop(node);
     }
-    printf("Delete [%d] is completed. :P\n", keyValue);
 
     return;
 }
@@ -650,11 +602,15 @@ void Leaf_Node_Pop(BNODE *node)
         BNODE *pointPrev = node->prevNode;
         node->nextNode->prevNode = pointPrev;
     }
-
-    free(node);
-    printf("leaf is poped\n");
-    Heap_Counting('-');
-    //printf("도비는 자유에요! \n");
+    if (!node->root)
+    {
+        free(node);
+        Heap_Counting('-');
+    }
+    else
+    {
+        return;
+    }    
 }
 
 BNODE *Merge_Nodes(BNODE *node, int childIndex)
@@ -664,7 +620,6 @@ BNODE *Merge_Nodes(BNODE *node, int childIndex)
     if (childIndex < node->KeyCount)
     {
         free(node->childs[childIndex + 1]);
-        printf("Internal is poped \n");
         Heap_Counting('-');
         // 부모 노드의 childIndex key를 선행 자식 노드의 끝으로 이동
         node->childs[childIndex]->keys[T - 1] = node->keys[childIndex];
@@ -698,7 +653,6 @@ BNODE *Merge_Nodes(BNODE *node, int childIndex)
     else
     {
         free(node->childs[childIndex]);
-        printf("Internal is poped \n");
         Heap_Counting('-');
         // 부모 노드의 childIndex key를 선행 자식 노드의 처음으로 이동
         node->childs[childIndex - 1]->keys[T - 1] = node->keys[childIndex];
@@ -790,6 +744,7 @@ void Shift_to_Right(BNODE *node, int childIndex)
     node->childs[childIndex]->KeyCount++;
 }
 
+
 int Find_Value(BNODE *node, int keyValue)
 {
     for (int idx = 0; idx < node->KeyCount; ++idx)
@@ -800,4 +755,155 @@ int Find_Value(BNODE *node, int keyValue)
         }
     }
     return -1;
+}
+
+
+
+
+
+void Console_Main(BPLUSTREE *tree, int inputNumber)
+{
+    // 0. reprint the menu
+    if (inputNumber == 0)
+    {
+        Console_Print();
+    }
+
+    // 1. Print the Tree
+    else if (inputNumber == 1)
+    {
+
+        Print_Tree(tree->root, 0);
+        getchar();
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 2. Insert a Number
+    else if (inputNumber == 2)
+    {
+        printf("\n input a NUMBER to insert : ");
+        int insertNumber;
+        scanf("%d", &insertNumber);
+        Insert(tree, insertNumber);
+        getchar();
+        printf("\n Inserting [%d] is completed. ", insertNumber);
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 3. Delete a Number
+    else if (inputNumber == 3)
+    {
+        printf("\n input a NUMBER to delete : ");
+        int insertNumber;
+        scanf("%d", &insertNumber);
+        Deletion(tree, insertNumber);
+        getchar();
+        printf("\n Deleting [%d] is completed. ", insertNumber);
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 4. Search a Number
+    else if (inputNumber == 4)
+    {
+        printf("\n input a NUMBER to search : ");
+        int searchNumber;
+        scanf("%d", &searchNumber);
+        getchar();
+        if (Search(tree->root, searchNumber))
+        {
+            printf("\n [%d] is in the tree. ");
+        }
+        else
+        {
+            printf("\n [%d] is NOT in the tree. ");
+        } 
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    // 5. Clear the Tree
+    else if (inputNumber == 5)
+    {
+        Clear_Tree(tree);
+        getchar();
+        printf("\n Clearing the tree is completed. ");
+        printf("\nPlease insert anykey to continue");
+        getchar();
+        
+    }
+    
+
+    else if (inputNumber == 6)
+    {
+        getchar();
+        printf("\nUnder Construction");
+        printf("\nPlease insert anykey to continue");
+        getchar();
+    }
+
+    else if (inputNumber == 7)
+    {
+        getchar();
+        printf("\nThanks for using our service! See U Next Time! ^^/");
+        printf("\nDesigned by TrueSunDragon");
+        printf("\nPlease insert anykey to continue");
+        getchar();
+        exit(0);
+    }
+
+    else
+    {
+        printf("Input wrong number. Please select a number in menu");
+    }
+
+    return;
+}
+
+    
+
+void Console_Print()
+{
+    printf("\n┌─────────────────────────────────────────────────────────────┐");
+    printf("\n│             Welcome to the world of B-Tree!!                │");
+    printf("\n├─────────────────────────────────────────────────────────────┤");
+    printf("\n│                   --- Select a menu ---                     │");
+    printf("\n│   1. Print                                                  │");
+    printf("\n│   2. Insert                                                 │");
+    printf("\n│   3. Delete                                                 │");
+    printf("\n│   4. Search                                                 │");
+    printf("\n│   5. Clear                                                  │");
+    printf("\n│   6. Help                                                   │");
+    printf("\n│   7. Quit                                                   │");
+    printf("\n├─────────────────────────────────────────────────────────────┤");
+    printf("\n│                                   Designed by TrueSunDragon │");
+    printf("\n│                       copyright(c) 2021 All rights reserved │");
+    printf("\n└─────────────────────────────────────────────────────────────┘");
+
+}
+
+int Console_Input()
+{
+    printf("\n Please Select a menu ( 0 : reprint menu) : ");
+    int inputNumber;
+    scanf("%d", &inputNumber);
+    return inputNumber;
+}
+
+
+void Clear_Tree(BPLUSTREE* tree)
+{
+    Node_Clear(tree->root);
+    tree->root = NULL;
+}
+void Node_Clear(BNODE* node) {
+    if(node->leaf) {
+        free(node);
+        return;
+    }
+    for(int i = 0; i<= node->KeyCount; ++i) {
+        Node_Clear(node->childs[i]);
+    }
 }
