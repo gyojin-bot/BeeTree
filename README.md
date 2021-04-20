@@ -1,5 +1,4 @@
 # BTree, BPlusTree
----
 Before start, git clone and compile what data structure you want to see.
 
 ### Get start with B-Tree
@@ -13,5 +12,5 @@ gcc -o BTree BTree.c
 gcc -o BPlusTree BPlusTree.c
 ./BPlusTree
 ```
-You can see the input console program.
+when you run above compiled file, you can see the input console program.
 Check the operations and enjoy yourself!
